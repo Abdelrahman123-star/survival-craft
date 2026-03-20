@@ -7,7 +7,7 @@ export const ITEMS: Record<string, Item> = {
     name: 'Wooden Sword',
     description: 'A basic sword made of wood',
     type: 'weapon',
-    icon: 'sword',
+    icon: 'wood-sword',
     stackable: false,
     maxStack: 1,
     properties: {
@@ -29,7 +29,7 @@ export const ITEMS: Record<string, Item> = {
       value: 15
     }
   },
-  
+
   'iron-sword': {
     id: 'iron-sword',
     name: 'Iron Sword',
@@ -43,7 +43,7 @@ export const ITEMS: Record<string, Item> = {
       value: 50
     }
   },
-  
+
   // Tools
   'wooden-pickaxe': {
     id: 'wooden-pickaxe',
@@ -58,7 +58,7 @@ export const ITEMS: Record<string, Item> = {
       value: 8
     }
   },
-  
+
   'iron-axe': {
     id: 'iron-axe',
     name: 'Iron Axe',
@@ -72,7 +72,21 @@ export const ITEMS: Record<string, Item> = {
       value: 30
     }
   },
-  
+
+  'wooden-axe': {
+    id: 'wooden-axe',
+    name: 'Wooden Axe',
+    description: 'A basic axe for chopping trees',
+    type: 'tool',
+    icon: 'axe',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      choppingPower: 2,
+      value: 5
+    }
+  },
+
   // Consumables
   'health-potion': {
     id: 'health-potion',
@@ -87,7 +101,7 @@ export const ITEMS: Record<string, Item> = {
       value: 25
     }
   },
-  
+
   'mana-potion': {
     id: 'mana-potion',
     name: 'Mana Potion',
@@ -101,7 +115,7 @@ export const ITEMS: Record<string, Item> = {
       value: 20
     }
   },
-  
+
   // Materials
   'wood': {
     id: 'wood',
@@ -115,7 +129,33 @@ export const ITEMS: Record<string, Item> = {
       value: 1
     }
   },
-  
+
+  'wood-planks': {
+    id: 'wood-planks',
+    name: 'Wood Planks',
+    description: 'Refined wood for building and crafting',
+    type: 'material',
+    icon: 'wood-planks',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 2
+    }
+  },
+
+  'stick': {
+    id: 'stick',
+    name: 'Stick',
+    description: 'A simple wooden stick',
+    type: 'material',
+    icon: 'stick',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 1
+    }
+  },
+
   'iron-ore': {
     id: 'iron-ore',
     name: 'Iron Ore',
@@ -128,7 +168,7 @@ export const ITEMS: Record<string, Item> = {
       value: 5
     }
   },
-  
+
   'iron-bar': {
     id: 'iron-bar',
     name: 'Iron Bar',

@@ -27,7 +27,7 @@ export class CombatSystem {
 
     player.lastAttackAt = now
     const isCrit = Math.random() < 0.1
-    const damage = isCrit ? 2.5 : 1
+    const damage = isCrit ? 2.5 : 10
 
     this.playSwordSwing(player, isCrit)
 

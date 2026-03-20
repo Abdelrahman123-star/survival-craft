@@ -49,13 +49,13 @@ export class HUD {
   }
 
   update(player: Player) {
-    this.woodText.setText("🪵  Wood: " + player.wood)
-    this.coinsText.setText("🪙  Coins: " + player.coins)
-    
+    this.woodText.setText("🪵  Wood: " + player.inventory.countItem("wood"))
+    this.coinsText.setText("🪙  Coins: " + player.inventory.getGold())
+
     const ratio = Phaser.Math.Clamp(player.hp / PLAYER_MAX_HP, 0, 1)
     const fullW = (this.hpBarBg.width as number) - 4
     this.hpBarFill.width = Math.max(0, Math.floor(fullW * ratio))
-    
+
     const color = ratio > 0.55 ? 0x22cc55 : ratio > 0.25 ? 0xe1b500 : 0xcc3344
     this.hpBarFill.setFillStyle(color, 0.9)
     this.hpText.setText(`❤ ${Math.max(0, Math.ceil(player.hp * 10) / 10)}/${PLAYER_MAX_HP}`)

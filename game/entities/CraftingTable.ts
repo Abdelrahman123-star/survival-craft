@@ -4,10 +4,8 @@ export class CraftingTable {
   public sprite: Phaser.Physics.Arcade.Sprite
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    // Reuse merchant texture for now (no crafting asset yet)
-    this.sprite = scene.physics.add.sprite(x, y, "merchant")
-      .setScale(2.4)
-      .setTint(0x66ffcc)
+    this.sprite = scene.physics.add.sprite(x, y, "crafting-table")
+      .setScale(3)
       .setDepth(1)
       .setImmovable(true)
 

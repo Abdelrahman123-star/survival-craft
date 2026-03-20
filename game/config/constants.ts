@@ -1,5 +1,6 @@
 // World
 export const WORLD_SIZE = 1500
+export const GRID_SIZE = 48
 export const PLAYER_SPEED = 200
 export const PLAYER_MAX_HP = 20
 export const PLAYER_ATTACK_RANGE = 90
@@ -7,7 +8,7 @@ export const PLAYER_ATTACK_COOLDOWN_MS = 260
 export const PLAYER_HIT_COOLDOWN_MS = 450
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 3000
+export const MONSTER_SPAWN_DELAY = 1000
 export const SPIDER_MAX_HP = 6
 export const BRUTE_MAX_HP = 12
 export const BRUTE_SPEED = 80
