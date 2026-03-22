@@ -23,8 +23,17 @@ export class Player {
     this.weaponSprite = scene.add.image(x + 18, y + 4, "wood-sword")
       .setScale(2.1).setDepth(2).setVisible(false).setOrigin(0.2, 0.8)
 
-    // Start with a sword
+    // Ensure snappy movement
+    if (this.sprite.body) {
+      const body = this.sprite.body as Phaser.Physics.Arcade.Body
+      body.setDamping(false)
+      body.setDrag(0)
+      body.setMaxSpeed(400)
+    }
+
+    // Start with a sword and a hammer
     this.inventory.addItem(ITEMS["wooden-sword"], 1)
+    this.inventory.addItem(ITEMS["hammer"], 1)
   }
 
   setMovementEnabled(enabled: boolean) {
@@ -101,6 +110,8 @@ export class Player {
   }
 
   canAttack(now: number, cooldown: number): boolean {
-    return this.equippedItemId === "wooden-sword" && now - this.lastAttackAt >= cooldown
+    const item = this.equippedItemId ? ITEMS[this.equippedItemId] : null
+    const isWeapon = item?.type === "weapon"
+    return isWeapon && now - this.lastAttackAt >= cooldown
   }
 }

@@ -11,7 +11,7 @@ export const ITEMS: Record<string, Item> = {
     stackable: false,
     maxStack: 1,
     properties: {
-      damage: 1,
+      damage: 3,
       value: 10
     }
   },
@@ -27,6 +27,22 @@ export const ITEMS: Record<string, Item> = {
     properties: {
       damage: 1,
       value: 15
+    }
+  },
+
+  'hammer': {
+    id: 'hammer',
+    name: 'Hammer',
+    description: 'Heavy hitter, slow swing',
+    type: 'weapon',
+    icon: 'hammer',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      damage: 6,
+      cooldown: 600,
+      knockback: 450,
+      value: 12
     }
   },
 

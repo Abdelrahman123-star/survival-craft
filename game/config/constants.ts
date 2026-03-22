@@ -8,11 +8,13 @@ export const PLAYER_ATTACK_COOLDOWN_MS = 260
 export const PLAYER_HIT_COOLDOWN_MS = 450
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 1000
+export const MONSTER_SPAWN_DELAY = 991000
 export const SPIDER_MAX_HP = 6
+export const SPIDER_SPEED = 140
+
 export const BRUTE_MAX_HP = 12
 export const BRUTE_SPEED = 80
-export const SPIDER_SPEED = 140
+
 export const GHOST_MAX_HP = 8
 export const GHOST_SPEED = 155
 
@@ -26,12 +28,13 @@ export const WOOD_TO_COIN_RATE = 2
 
 
 
-// Items
+// Items shop
 export const ITEM_PRICES: Record<string, number> = {
   sword: 5,
   bow: 8,
   pickaxe: 4,
   axe: 3,
+  hammer: 12,
 }
 
 export const SHOP_ITEMS = [
@@ -39,6 +42,7 @@ export const SHOP_ITEMS = [
   { key: "bow", label: "Bow", desc: "Ranged weapon" },
   { key: "pickaxe", label: "Pickaxe", desc: "Mine resources" },
   { key: "axe", label: "Axe", desc: "Chop faster" },
+  { key: "hammer", label: "Hammer", desc: "Heavy hitter" },
 ]
 
 // World Gen

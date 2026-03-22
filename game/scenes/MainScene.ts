@@ -1,5 +1,5 @@
 import * as Phaser from "phaser"
-import { WORLD_SIZE, PLAYER_SPEED, GROUND_TILES } from "../config/constants"
+import { WORLD_SIZE, PLAYER_SPEED } from "../config/constants"
 import { Player } from "../entities/Player"
 import { TreeSystem } from "../systems/TreeSystem"
 import { MonsterSystem } from "../systems/MonsterSystem"
@@ -11,6 +11,7 @@ import { InventoryUI } from "../ui/InventoryUI"
 import { CraftingUI } from "../ui/CraftingUI"
 import { CraftingTable } from "../entities/CraftingTable"
 import { BuildingSystem } from "../systems/BuildingSystem"
+import { MapSystem } from "../systems/MapSystem"
 import { ITEMS } from "../config/items"
 
 export default class MainScene extends Phaser.Scene {
@@ -24,6 +25,7 @@ export default class MainScene extends Phaser.Scene {
   private craftingUI!: CraftingUI
   private craftingTable!: CraftingTable
   private buildingSystem!: BuildingSystem
+  private mapSystem!: MapSystem
   private player!: Player
   private keys!: Record<string, Phaser.Input.Keyboard.Key>
   private interactKey!: Phaser.Input.Keyboard.Key
@@ -36,35 +38,45 @@ export default class MainScene extends Phaser.Scene {
     const assets: Record<string, string> = {
       player: "/assets/player.png", ground: "/assets/plain-grass.png",
       "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
-      tree_bottom: "/assets/tree_bottom.png", tree_top: "/assets/tree_top.png",
-      monster: "/assets/spider.png", merchant: "/assets/merchant.png",
+      tree_bottom: "/assets/tree.png", tree_top: "/assets/tree_top.png",
+      spider: "/assets/spider.png", merchant: "/assets/merchant.png",
       "wood-sword": "/assets/wood-sword.png", axe: "/assets/axe.png",
       pickaxe: "/assets/pickaxe.png", bow: "/assets/bow.png",
       ghost: "/assets/ghost.png", "wood-planks": "/assets/wood-planks.jpg",
       stick: "/assets/stick.png", "crafting-table": "/assets/crafting-table.png",
+      hammer: "/assets/hammer.png", brute: "/assets/spider.png",
     }
     Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
+    this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
   }
 
   create() {
     window.addEventListener("contextmenu", (e) => e.preventDefault())
     this.game.canvas.oncontextmenu = () => false
-    this.createWorld()
-    this.player = new Player(this, 400, 300)
-    this.setupCamera()
     this.setupControls()
+    this.mapSystem = new MapSystem(this)
+    this.player = new Player(this, 750, 750)
+    this.setupCamera()
     this.treeSystem = new TreeSystem(this)
+
+    // Add village trees (previously in MapSystem)
+    const centerX = WORLD_SIZE / 2
+    const centerY = WORLD_SIZE / 2
+    this.treeSystem.createTree(centerX - 64, centerY - 96, "green")
+    this.treeSystem.createTree(centerX + 32, centerY - 96, "orange")
+
     this.monsterSystem = new MonsterSystem(this)
     this.combatSystem = new CombatSystem(this, this.monsterSystem)
     this.hud = new HUD(this)
     this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
-    this.merchantSystem = new MerchantSystem(this, 550, 300, this.player, this.inventoryUI)
+    this.merchantSystem = new MerchantSystem(this, 750, 600, this.player, this.inventoryUI)
     this.craftingSystem = new CraftingSystem()
     this.craftingUI = new CraftingUI(this)
     this.inventoryUI.setCraftingUI(this.craftingUI)
-    this.craftingTable = new CraftingTable(this, 650, 340)
+    this.craftingTable = new CraftingTable(this, 850, 750)
     this.buildingSystem = new BuildingSystem(this)
 
+    this.physics.add.collider(this.player.sprite, this.mapSystem.getObstacleLayer())
     this.physics.add.collider(this.player.sprite, this.buildingSystem.getBlocksGroup())
     this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.buildingSystem.getBlocksGroup(), (m, b) => {
       const monster = this.monsterSystem.getMonsterAt(m as Phaser.Physics.Arcade.Sprite)
@@ -81,6 +93,8 @@ export default class MainScene extends Phaser.Scene {
       }
       this.hud.update(this.player)
     })
+
+    this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.mapSystem.getObstacleLayer())
   }
 
   update() {
@@ -99,12 +113,7 @@ export default class MainScene extends Phaser.Scene {
   }
 
   private createWorld() {
-    const ts = 48
-    for (let x = 0; x < WORLD_SIZE; x += ts) {
-      for (let y = 0; y < WORLD_SIZE; y += ts) {
-        this.add.image(x, y, Phaser.Utils.Array.GetRandom(GROUND_TILES)).setOrigin(0).setScale(3).setDepth(0)
-      }
-    }
+    // Replaced by MapSystem
   }
 
   private setupCamera() {

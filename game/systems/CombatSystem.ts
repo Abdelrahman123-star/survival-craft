@@ -18,16 +18,17 @@ export class CombatSystem {
     equipped: InventorySlot | null,
     now: number
   ): { hit: boolean, isCrit: boolean, damage: number, monstersHit: number } {
-    const equippedWeaponOk = equipped?.item?.id === "wooden-sword"
-    // player.equippedItemId is now managed via Player.setEquippedItem() from InventoryUI
+    const item = equipped?.item
+    const damage = item?.properties?.damage ?? 1
+    const cooldown = item?.properties?.cooldown ?? PLAYER_ATTACK_COOLDOWN_MS
 
-    if (!equippedWeaponOk || !player.canAttack(now, PLAYER_ATTACK_COOLDOWN_MS)) {
+    if (!item || item.type !== "weapon" || !player.canAttack(now, cooldown)) {
       return { hit: false, isCrit: false, damage: 0, monstersHit: 0 }
     }
 
     player.lastAttackAt = now
     const isCrit = Math.random() < 0.1
-    const damage = isCrit ? 2.5 : 10
+    const finalDamage = isCrit ? damage * 2.5 : damage
 
     this.playSwordSwing(player, isCrit)
 
@@ -37,11 +38,16 @@ export class CombatSystem {
 
     let monstersHit = 0
     monstersInRange.forEach(monster => {
-      const monsterDamaged = this.monsterSystem.damageMonster(monster, damage)
+      const monsterDamaged = this.monsterSystem.damageMonster(monster, finalDamage)
       if (monsterDamaged) {
         monstersHit++
+        // Apply knockback if weapon has it
+        const knockbackForce = item?.properties?.knockback ?? 0
+        if (knockbackForce > 0) {
+          monster.applyKnockback(knockbackForce, player.sprite.x, player.sprite.y)
+        }
         // Show damage number on each monster hit
-        this.showDamageNumber(monster.sprite.x, monster.sprite.y, damage, isCrit)
+        this.showDamageNumber(monster.sprite.x, monster.sprite.y, finalDamage, isCrit)
       }
     })
 
@@ -50,7 +56,7 @@ export class CombatSystem {
       this.showCritEffect(player.sprite.x, player.sprite.y)
     }
 
-    return { hit: monstersHit > 0, isCrit, damage, monstersHit }
+    return { hit: monstersHit > 0, isCrit, damage: finalDamage, monstersHit }
   }
 
   handlePlayerHit(player: Player, monsterSprite: Phaser.Physics.Arcade.Sprite, now: number): boolean {

@@ -21,7 +21,7 @@ export class InventoryUI {
 
   constructor(scene: Phaser.Scene, inventory: Inventory, player: any) {
     this.scene = scene; this.inventory = inventory; this.player = player
-    this.createHotbar(); this.createInventoryUI(); this.setupHotbarControls(); this.syncPlayerEquipment()
+    this.createHotbar(); this.createInventoryUI(); this.setupHotbarControls(); this.syncPlayerEquipment(); this.refreshUI()
   }
 
   private syncPlayerEquipment() { const s = this.inventory.getItem(this.selectedHotbarIndex); this.player.setEquippedItem(s?.item?.id ?? null) }
