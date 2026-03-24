@@ -3,6 +3,7 @@ import { Inventory, InventorySlot } from "../entities/Inventory"
 import { ITEMS } from "../config/items"
 
 export class InventoryUI {
+  private static readonly HOTBAR_SLOTS = 9
   private scene: Phaser.Scene
   private inventory: Inventory
   private container!: Phaser.GameObjects.Container
@@ -28,8 +29,8 @@ export class InventoryUI {
 
   private createHotbar() {
     this.hotbarContainer = this.scene.add.container(0, 0).setDepth(100)
-    const ss = 50, sp = 5, sx = -(8 * (ss + sp)) / 2
-    for (let i = 0; i < 8; i++) {
+    const ss = 50, sp = 5, sx = -(InventoryUI.HOTBAR_SLOTS * (ss + sp)) / 2
+    for (let i = 0; i < InventoryUI.HOTBAR_SLOTS; i++) {
       const c = this.scene.add.container(sx + i * (ss + sp), 0)
       const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x333333, 0.8).setStrokeStyle(2, i === 0 ? 0xFFD700 : 0x666666).setInteractive({ useHandCursor: true })
       const ic = this.scene.add.image(0, 0, '').setScale(2).setVisible(false)
@@ -62,8 +63,8 @@ export class InventoryUI {
     }
   }
 
-  private setupHotbarControls() { const ks = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT']; ks.forEach((k, i) => this.scene.input.keyboard?.on(`keydown-${k}`, () => this.selectHotbarSlot(i))) }
-  private selectHotbarSlot(idx: number) { this.selectedHotbarIndex = idx; this.hotbarSlots.forEach((s, i) => (s.getAt(0) as any).setStrokeStyle(2, i === idx ? 0xFFD700 : 0x666666)); this.syncPlayerEquipment() }
+  private setupHotbarControls() { const ks = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE']; ks.forEach((k, i) => this.scene.input.keyboard?.on(`keydown-${k}`, () => this.selectHotbarSlot(i))) }
+  public selectHotbarSlot(idx: number) { this.selectedHotbarIndex = Phaser.Math.Clamp(idx, 0, InventoryUI.HOTBAR_SLOTS - 1); this.hotbarSlots.forEach((s, i) => (s.getAt(0) as any).setStrokeStyle(2, i === this.selectedHotbarIndex ? 0xFFD700 : 0x666666)); this.syncPlayerEquipment() }
   private handleSlotClick(idx: number, p: any) { const s = this.inventory.getItem(idx); if (s?.item) this.startDrag(idx, s) }
 
   startDrag(idx: number | string, s: InventorySlot) {

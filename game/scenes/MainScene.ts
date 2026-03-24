@@ -12,6 +12,7 @@ import { CraftingUI } from "../ui/CraftingUI"
 import { CraftingTable } from "../entities/CraftingTable"
 import { BuildingSystem } from "../systems/BuildingSystem"
 import { MapSystem } from "../systems/MapSystem"
+import { QuestSystem } from "../systems/QuestSystem"
 import { ITEMS } from "../config/items"
 
 export default class MainScene extends Phaser.Scene {
@@ -20,6 +21,7 @@ export default class MainScene extends Phaser.Scene {
   private combatSystem!: CombatSystem
   private merchantSystem!: MerchantSystem
   private craftingSystem!: CraftingSystem
+  private questSystem!: QuestSystem
   private hud!: HUD
   private inventoryUI!: InventoryUI
   private craftingUI!: CraftingUI
@@ -31,6 +33,10 @@ export default class MainScene extends Phaser.Scene {
   private interactKey!: Phaser.Input.Keyboard.Key
   private attackKey!: Phaser.Input.Keyboard.Key
   private inventoryKey!: Phaser.Input.Keyboard.Key
+  private villager!: Phaser.Physics.Arcade.Sprite
+  private isTeleportingToBoss = false
+  // Edit these coordinates to move villager position.
+  private readonly villagerSpawn = { x: 700, y: 1050 }
 
   constructor() { super("MainScene") }
 
@@ -38,13 +44,13 @@ export default class MainScene extends Phaser.Scene {
     const assets: Record<string, string> = {
       player: "/assets/player.png", ground: "/assets/plain-grass.png",
       "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
-      tree_bottom: "/assets/tree.png", tree_top: "/assets/tree_top.png",
+      tree_bottom: "/assets/tree.png",
       spider: "/assets/spider.png", merchant: "/assets/merchant.png",
       "wood-sword": "/assets/wood-sword.png", axe: "/assets/axe.png",
       pickaxe: "/assets/pickaxe.png", bow: "/assets/bow.png",
       ghost: "/assets/ghost.png", "wood-planks": "/assets/wood-planks.jpg",
       stick: "/assets/stick.png", "crafting-table": "/assets/crafting-table.png",
-      hammer: "/assets/hammer.png", brute: "/assets/spider.png",
+      hammer: "/assets/hammer.png", brute: "/assets/spider.png", villager: "/assets/villiger.png",
     }
     Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
     this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
@@ -56,6 +62,8 @@ export default class MainScene extends Phaser.Scene {
     this.setupControls()
     this.mapSystem = new MapSystem(this)
     this.player = new Player(this, 750, 750)
+    this.villager = this.physics.add.sprite(this.villagerSpawn.x, this.villagerSpawn.y, "villager").setScale(3).setDepth(1)
+    this.villager.setImmovable(true)
     this.setupCamera()
     this.treeSystem = new TreeSystem(this)
 
@@ -66,6 +74,16 @@ export default class MainScene extends Phaser.Scene {
     this.treeSystem.createTree(centerX + 32, centerY - 96, "orange")
 
     this.monsterSystem = new MonsterSystem(this)
+    this.questSystem = new QuestSystem(this)
+
+    this.monsterSystem.onMonsterDeath = (type) => {
+      const xpValues: Record<string, number> = { spider: 20, ghost: 40, brute: 60 }
+      const xp = xpValues[type] || 10
+      this.player.addXp(xp)
+      this.questSystem.updateProgress("kill", type, 1, this.player)
+      this.hud.update(this.player, this.questSystem)
+    }
+
     this.combatSystem = new CombatSystem(this, this.monsterSystem)
     this.hud = new HUD(this)
     this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
@@ -77,6 +95,7 @@ export default class MainScene extends Phaser.Scene {
     this.buildingSystem = new BuildingSystem(this)
 
     this.physics.add.collider(this.player.sprite, this.mapSystem.getObstacleLayer())
+    this.physics.add.collider(this.villager, this.mapSystem.getObstacleLayer())
     this.physics.add.collider(this.player.sprite, this.buildingSystem.getBlocksGroup())
     this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.buildingSystem.getBlocksGroup(), (m, b) => {
       const monster = this.monsterSystem.getMonsterAt(m as Phaser.Physics.Arcade.Sprite)
@@ -91,7 +110,7 @@ export default class MainScene extends Phaser.Scene {
       if (this.combatSystem.handlePlayerHit(this.player, m as Phaser.Physics.Arcade.Sprite, this.time.now)) {
         this.player.playDeathAnimation(() => this.scene.restart())
       }
-      this.hud.update(this.player)
+      this.hud.update(this.player, this.questSystem)
     })
 
     this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.mapSystem.getObstacleLayer())
@@ -101,7 +120,7 @@ export default class MainScene extends Phaser.Scene {
     this.player.updateMovement(this.keys, PLAYER_SPEED)
     this.player.updateWeaponFollow()
     this.monsterSystem.update(this.player)
-    this.hud.update(this.player)
+    this.hud.update(this.player, this.questSystem)
     this.inventoryUI.update()
     this.craftingUI.update()
     this.merchantSystem.update()
@@ -132,6 +151,17 @@ export default class MainScene extends Phaser.Scene {
   private handleInteraction() {
     if (!Phaser.Input.Keyboard.JustDown(this.interactKey)) return
 
+    const distanceToVillager = Phaser.Math.Distance.Between(
+      this.player.sprite.x,
+      this.player.sprite.y,
+      this.villager.x,
+      this.villager.y
+    )
+    if (distanceToVillager < 90) {
+      this.startBossTeleportDialogue()
+      return
+    }
+
     if (this.merchantSystem.isPlayerInRange(this.player.sprite.x, this.player.sprite.y)) {
       this.merchantSystem.toggle(this.player)
       return
@@ -152,8 +182,13 @@ export default class MainScene extends Phaser.Scene {
       this.treeSystem.chopTree(nearbyTree)
       this.player.inventory.addItem(ITEMS["wood"], 1)
       this.player.playChoppingAnimation()
+
+      // Grant XP and update quest
+      this.player.addXp(10)
+      this.questSystem.updateProgress("chop", undefined, 1, this.player)
+
       this.inventoryUI.refreshUI()
-      this.hud.update(this.player)
+      this.hud.update(this.player, this.questSystem)
     }
   }
 
@@ -174,5 +209,29 @@ export default class MainScene extends Phaser.Scene {
     if (Phaser.Input.Keyboard.JustDown(this.inventoryKey) && !this.merchantSystem.isOpenNow()) {
       this.inventoryUI.toggle()
     }
+  }
+
+  private startBossTeleportDialogue() {
+    if (this.isTeleportingToBoss) return
+    this.isTeleportingToBoss = true
+    this.player.setMovementEnabled(false)
+
+    const text = this.add.text(
+      this.player.sprite.x,
+      this.player.sprite.y - 90,
+      "Villager: There is a boss no one can defeat...\nBe careful, hero.",
+      {
+        fontSize: "18px",
+        color: "#ffffff",
+        backgroundColor: "#000000cc",
+        padding: { x: 12, y: 8 },
+        align: "center",
+      }
+    ).setOrigin(0.5).setDepth(30)
+
+    this.time.delayedCall(1800, () => {
+      text.destroy()
+      this.scene.start("SecretLevelScene")
+    })
   }
 }

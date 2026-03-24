@@ -196,5 +196,18 @@ export const ITEMS: Record<string, Item> = {
     properties: {
       value: 15
     }
+  },
+
+  'boss-key': {
+    id: 'boss-key',
+    name: 'Secret Key',
+    description: 'Opens the Desert secret boss door',
+    type: 'quest',
+    icon: 'boss-key',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      value: 0
+    }
   }
 }

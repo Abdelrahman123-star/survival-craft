@@ -8,7 +8,7 @@ export const PLAYER_ATTACK_COOLDOWN_MS = 260
 export const PLAYER_HIT_COOLDOWN_MS = 450
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 991000
+export const MONSTER_SPAWN_DELAY = 3000
 export const SPIDER_MAX_HP = 6
 export const SPIDER_SPEED = 140
 

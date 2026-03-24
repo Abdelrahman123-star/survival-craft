@@ -7,6 +7,10 @@ export class Player {
   public sprite: Phaser.Physics.Arcade.Sprite
   public weaponSprite: Phaser.GameObjects.Image
   public hp = PLAYER_MAX_HP
+  public maxHp = PLAYER_MAX_HP
+  public level = 1
+  public xp = 0
+  public xpToNextLevel = 100
   public inventory = new Inventory(20)
   public lastAttackAt = 0
   public lastHitAt = 0
@@ -113,5 +117,57 @@ export class Player {
     const item = this.equippedItemId ? ITEMS[this.equippedItemId] : null
     const isWeapon = item?.type === "weapon"
     return isWeapon && now - this.lastAttackAt >= cooldown
+  }
+
+  addXp(amount: number) {
+    this.xp += amount
+    while (this.xp >= this.xpToNextLevel) {
+      this.levelUp()
+    }
+  }
+
+  private levelUp() {
+    this.xp -= this.xpToNextLevel
+    this.level++
+    this.xpToNextLevel = Math.floor(this.level * 100 * (1 + (this.level - 1) * 0.2))
+    this.maxHp += 20
+    this.hp = this.maxHp
+
+    // Show level up effect
+    this.showLevelUpEffect()
+  }
+
+  private showLevelUpEffect() {
+    const scene = this.sprite.scene
+    const text = scene.add.text(this.sprite.x, this.sprite.y - 60, "LEVEL UP!", {
+      fontSize: "32px",
+      color: "#FFD700",
+      fontStyle: "bold",
+      stroke: "#000000",
+      strokeThickness: 6
+    }).setOrigin(0.5).setDepth(20)
+
+    scene.tweens.add({
+      targets: text,
+      y: this.sprite.y - 120,
+      alpha: 0,
+      duration: 2000,
+      ease: "Power2",
+      onComplete: () => text.destroy()
+    })
+
+    // Add some sparkle
+    for (let i = 0; i < 12; i++) {
+      const angle = (i / 12) * Math.PI * 2
+      const sparkle = scene.add.circle(this.sprite.x, this.sprite.y, 5, 0xFFD700, 0.8).setDepth(19)
+      scene.tweens.add({
+        targets: sparkle,
+        x: this.sprite.x + Math.cos(angle) * 100,
+        y: this.sprite.y + Math.sin(angle) * 100,
+        alpha: 0,
+        duration: 1000,
+        onComplete: () => sparkle.destroy()
+      })
+    }
   }
 }

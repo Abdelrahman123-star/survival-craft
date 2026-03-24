@@ -1,6 +1,6 @@
-import * as Phaser from "phaser"
 import { Player } from "../entities/Player"
 import { PLAYER_MAX_HP } from "../config/constants"
+import { QuestSystem } from "../systems/QuestSystem"
 
 export class HUD {
   private woodText!: Phaser.GameObjects.Text
@@ -8,6 +8,10 @@ export class HUD {
   private hpBarBg!: Phaser.GameObjects.Rectangle
   private hpBarFill!: Phaser.GameObjects.Rectangle
   private hpText!: Phaser.GameObjects.Text
+  private levelText!: Phaser.GameObjects.Text
+  private xpBarBg!: Phaser.GameObjects.Rectangle
+  private xpBarFill!: Phaser.GameObjects.Rectangle
+  private questText!: Phaser.GameObjects.Text
   private scene: Phaser.Scene
 
   constructor(scene: Phaser.Scene) {
@@ -46,18 +50,51 @@ export class HUD {
       fontFamily: "Arial",
       fontStyle: "bold",
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(12)
+
+    // Level and XP
+    this.levelText = this.scene.add.text(20, 125, "Level: 1", {
+      fontSize: "22px", color: "#FFD700", fontFamily: "Georgia",
+      fontStyle: "bold", stroke: "#000000", strokeThickness: 3
+    }).setScrollFactor(0).setDepth(10)
+
+    this.xpBarBg = this.scene.add.rectangle(20, 155, 190, 8, 0x000000, 0.6)
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(10)
+    this.xpBarFill = this.scene.add.rectangle(22, 157, 0, 4, 0x4488ff, 0.9)
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(11)
+
+    // Quests
+    this.questText = this.scene.add.text(this.scene.cameras.main.width - 20, 20, "Challenges:", {
+      fontSize: "18px", color: "#ffffff", fontFamily: "Georgia",
+      backgroundColor: "#00000066", padding: { x: 10, y: 5 },
+      align: "right"
+    }).setScrollFactor(0).setDepth(10).setOrigin(1, 0)
   }
 
-  update(player: Player) {
+  update(player: Player, questSystem?: QuestSystem) {
     this.woodText.setText("🪵  Wood: " + player.inventory.countItem("wood"))
     this.coinsText.setText("🪙  Coins: " + player.inventory.getGold())
 
-    const ratio = Phaser.Math.Clamp(player.hp / PLAYER_MAX_HP, 0, 1)
+    // HP Bar
+    const ratio = Phaser.Math.Clamp(player.hp / player.maxHp, 0, 1)
     const fullW = (this.hpBarBg.width as number) - 4
     this.hpBarFill.width = Math.max(0, Math.floor(fullW * ratio))
 
     const color = ratio > 0.55 ? 0x22cc55 : ratio > 0.25 ? 0xe1b500 : 0xcc3344
     this.hpBarFill.setFillStyle(color, 0.9)
-    this.hpText.setText(`❤ ${Math.max(0, Math.ceil(player.hp * 10) / 10)}/${PLAYER_MAX_HP}`)
+    this.hpText.setText(`❤ ${Math.max(0, Math.ceil(player.hp * 10) / 10)}/${Math.ceil(player.maxHp)}`)
+
+    // Level & XP
+    this.levelText.setText(`Level: ${player.level}`)
+    const xpRatio = Phaser.Math.Clamp(player.xp / player.xpToNextLevel, 0, 1)
+    this.xpBarFill.width = Math.max(0, Math.floor(186 * xpRatio))
+
+    // Quests
+    if (questSystem) {
+      let questStr = "Challenges:\n"
+      questSystem.getActiveQuests().forEach(q => {
+        questStr += `• ${q.description}: ${q.currentCount}/${q.targetCount}\n`
+      })
+      this.questText.setText(questStr)
+    }
   }
 }
