@@ -13,7 +13,7 @@ export class Merchant {
     scene.add.text(x, y - 48, "@treyg1970\n   [E] Trade", {
       fontSize: "13px",
       color: "#FFD700",
-      fontFamily: "Arial",
+      fontFamily: "Alagard",
       backgroundColor: "#000000bb",
       padding: { x: 7, y: 3 },
     }).setOrigin(0.5).setDepth(2)

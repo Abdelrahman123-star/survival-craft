@@ -78,29 +78,27 @@ export class CombatSystem {
     return died
   }
 
+  public applyMonsterDamage(player: Player, damage: number): boolean {
+    if (this.scene.time.now - player.lastHitAt < PLAYER_HIT_COOLDOWN_MS) {
+      return false
+    }
+    player.lastHitAt = this.scene.time.now
+    const died = player.takeDamage(damage)
+    this.showDamageNumber(player.sprite.x, player.sprite.y - 30, damage, false, true)
+    return died
+  }
+
   private showDamageNumber(x: number, y: number, damage: number, isCrit: boolean, isPlayer: boolean = false) {
     const color = isCrit ? "#FFD700" : (isPlayer ? "#FF4444" : "#FFFFFF")
     const fontSize = isCrit ? "24px" : "18px"
     const text = this.scene.add.text(x, y - 40, damage.toFixed(1), {
       fontSize: fontSize,
       color: color,
-      fontFamily: "Arial",
+      fontFamily: "Alagard",
       fontStyle: "bold",
       stroke: "#000000",
       strokeThickness: 3,
     }).setOrigin(0.5).setDepth(10)
-
-    // Add a little icon for crit
-    if (isCrit) {
-      this.scene.add.text(x - 25, y - 45, "⚡", {
-        fontSize: "20px",
-        color: "#FFD700",
-        fontFamily: "Arial",
-        fontStyle: "bold",
-        stroke: "#000000",
-        strokeThickness: 2,
-      }).setOrigin(0.5).setDepth(10)
-    }
 
     // Animate the damage number
     this.scene.tweens.add({
@@ -135,7 +133,7 @@ export class CombatSystem {
     const critText = this.scene.add.text(x, y - 50, "CRITICAL!", {
       fontSize: "28px",
       color: "#FFD700",
-      fontFamily: "Arial",
+      fontFamily: "Alagard",
       fontStyle: "bold",
       stroke: "#000000",
       strokeThickness: 4,

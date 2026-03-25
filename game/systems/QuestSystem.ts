@@ -3,16 +3,18 @@ import { Player } from "../entities/Player"
 
 export interface Quest {
     id: string
+    villagerId?: string // Link to a villager
     description: string
     targetCount: number
     currentCount: number
     xpReward: number
-    type: "kill" | "chop"
-    targetType?: string // e.g., "spider"
+    type: "kill" | "chop" | "collect"
+    targetType?: string // e.g., "spider" or "wood"
+    status: 'available' | 'active' | 'completed' | 'claimed'
 }
 
 export class QuestSystem {
-    private activeQuests: Quest[] = []
+    private allQuests: Quest[] = []
     private scene: Phaser.Scene
     private onQuestCompleted?: (quest: Quest) => void
 
@@ -22,88 +24,96 @@ export class QuestSystem {
     }
 
     private generateInitialQuests() {
-        this.activeQuests.push({
-            id: "kill-spiders",
+        // These will be "available" quests offered by villagers
+        this.allQuests.push({
+            id: "wood-quest",
+            villagerId: "worker",
+            description: "Collect 10 Wood",
+            targetCount: 10,
+            currentCount: 0,
+            xpReward: 50,
+            type: "collect",
+            targetType: "wood",
+            status: 'available'
+        })
+
+        this.allQuests.push({
+            id: "kill-quest",
+            villagerId: "smith",
             description: "Kill 5 Spiders",
             targetCount: 5,
             currentCount: 0,
-            xpReward: 50,
+            xpReward: 60,
             type: "kill",
-            targetType: "spider"
+            targetType: "spider",
+            status: 'available'
         })
 
-        this.activeQuests.push({
-            id: "chop-trees",
-            description: "Chop 10 Trees",
-            targetCount: 10,
+        this.allQuests.push({
+            id: "chop-quest-lady",
+            villagerId: "OldLady",
+            description: "Chop 15 Trees",
+            targetCount: 15,
             currentCount: 0,
-            xpReward: 60,
-            type: "chop"
+            xpReward: 100,
+            type: "chop",
+            status: 'available'
+        })
+
+        this.allQuests.push({
+            id: "kill-quest-young",
+            villagerId: "YoungLady",
+            description: "Kill 3 Ghosts",
+            targetCount: 3,
+            currentCount: 0,
+            xpReward: 120,
+            type: "kill",
+            targetType: "ghost",
+            status: 'available'
         })
     }
 
-    public updateProgress(type: "kill" | "chop", targetType?: string, amount: number = 1, player?: Player) {
-        this.activeQuests.forEach(quest => {
-            if (quest.type === type && (!quest.targetType || quest.targetType === targetType)) {
+    public updateProgress(type: "kill" | "chop" | "collect", targetType?: string, amount: number = 1, player?: Player) {
+        this.allQuests.forEach(quest => {
+            if (quest.status === 'active' && quest.type === type && (!quest.targetType || quest.targetType === targetType)) {
                 if (quest.currentCount < quest.targetCount) {
                     quest.currentCount += amount
                     if (quest.currentCount >= quest.targetCount) {
-                        this.completeQuest(quest, player)
+                        quest.status = 'completed'
+                        this.showQuestCompleteNotification(quest)
                     }
                 }
             }
         })
     }
 
-    private completeQuest(quest: Quest, player?: Player) {
-        if (player) {
-            player.addXp(quest.xpReward)
-        }
-
-        // Show quest complete notification
-        this.showQuestCompleteNotification(quest)
-
-        // Remove old quest and add a replacement
-        this.activeQuests = this.activeQuests.filter(q => q.id !== quest.id)
-        this.generateReplacementQuest(quest.type)
-
-        if (this.onQuestCompleted) {
-            this.onQuestCompleted(quest)
+    public acceptQuest(id: string) {
+        const quest = this.allQuests.find(q => q.id === id)
+        if (quest && quest.status === 'available') {
+            quest.status = 'active'
         }
     }
 
-    private generateReplacementQuest(type: string) {
-        if (type === "kill") {
-            const monsters = ["spider", "ghost", "brute"]
-            const target = monsters[Math.floor(Math.random() * monsters.length)]
-            const count = target === "spider" ? 5 : (target === "ghost" ? 3 : 1)
-            this.activeQuests.push({
-                id: `kill-${target}-${Date.now()}`,
-                description: `Kill ${count} ${target.charAt(0).toUpperCase() + target.slice(1)}s`,
-                targetCount: count,
-                currentCount: 0,
-                xpReward: count * 15 + 20,
-                type: "kill",
-                targetType: target
-            })
-        } else {
-            const count = 5 + Math.floor(Math.random() * 10)
-            this.activeQuests.push({
-                id: `chop-trees-${Date.now()}`,
-                description: `Chop ${count} Trees`,
-                targetCount: count,
-                currentCount: 0,
-                xpReward: count * 5 + 10,
-                type: "chop"
-            })
+    public claimReward(id: string, player: Player) {
+        const questIndex = this.allQuests.findIndex(q => q.id === id)
+        if (questIndex !== -1) {
+            const quest = this.allQuests[questIndex]
+            if (quest.status === 'completed') {
+                player.addXp(quest.xpReward)
+                quest.status = 'claimed'
+                // Optional: remove or keep as claimed
+                if (this.onQuestCompleted) {
+                    this.onQuestCompleted(quest)
+                }
+            }
         }
     }
 
     private showQuestCompleteNotification(quest: Quest) {
         const cam = this.scene.cameras.main
-        const text = this.scene.add.text(cam.width - 200, 100, `Quest Complete:\n${quest.description}`, {
+        const text = this.scene.add.text(cam.width - 200, 100, `Quest Ready to Claim:\n${quest.description}\nReturn to Villager!`, {
             fontSize: "20px",
-            color: "#00FF00",
+            color: "#FFFF00",
             backgroundColor: "#00000099",
             padding: { x: 10, y: 5 },
             align: "right"
@@ -113,14 +123,18 @@ export class QuestSystem {
             targets: text,
             alpha: 0,
             y: 50,
-            delay: 3000,
+            delay: 4000,
             duration: 1000,
             onComplete: () => text.destroy()
         })
     }
 
+    public getQuestForVillager(villagerId: string): Quest | undefined {
+        return this.allQuests.find(q => q.villagerId === villagerId && q.status !== 'claimed')
+    }
+
     public getActiveQuests(): Quest[] {
-        return this.activeQuests
+        return this.allQuests.filter(q => q.status === 'active')
     }
 
     public setOnQuestCompleted(callback: (quest: Quest) => void) {

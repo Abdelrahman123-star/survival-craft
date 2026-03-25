@@ -34,8 +34,8 @@ export class InventoryUI {
       const c = this.scene.add.container(sx + i * (ss + sp), 0)
       const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x333333, 0.8).setStrokeStyle(2, i === 0 ? 0xFFD700 : 0x666666).setInteractive({ useHandCursor: true })
       const ic = this.scene.add.image(0, 0, '').setScale(2).setVisible(false)
-      const q = this.scene.add.text(15, 15, '', { fontSize: '12px', color: '#fff', fontStyle: 'bold' }).setOrigin(1).setVisible(false)
-      c.add([bg, this.scene.add.text(-15, -15, (i + 1).toString(), { fontSize: '10px', color: '#ccc' }), ic, q])
+      const q = this.scene.add.text(15, 15, '', { fontSize: '12px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' }).setOrigin(1).setVisible(false)
+      c.add([bg, this.scene.add.text(-15, -15, (i + 1).toString(), { fontSize: '10px', color: '#ccc', fontFamily: 'Alagard' }), ic, q])
       this.hotbarSlots.push(c); this.hotbarContainer.add(c)
       bg.on('pointerdown', (p: any) => { if (!p.rightButtonDown()) this.selectHotbarSlot(i) })
     }
@@ -47,15 +47,15 @@ export class InventoryUI {
       .setDepth(200).setVisible(false).setInteractive().on('pointerdown', () => this.toggle())
     this.container = this.scene.add.container(0, 0).setDepth(201).setVisible(false)
     const pnl = this.scene.add.rectangle(0, 0, 500, 400, 0x222222, 0.98).setStrokeStyle(2, 0xffffff, 0.3).setInteractive().on('pointerdown', (p: any, lx: any, ly: any, e: any) => e.stopPropagation())
-    const title = this.scene.add.text(-230, -180, 'Inventory', { fontSize: '24px', color: '#fff', fontStyle: 'bold' })
-    const gld = this.scene.add.text(150, -180, '', { fontSize: '20px', color: '#FFD700' })
+    const title = this.scene.add.text(-230, -180, 'Inventory', { fontSize: '24px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' })
+    const gld = this.scene.add.text(150, -180, '', { fontSize: '20px', color: '#FFD700', fontFamily: 'Alagard' })
     this.container.add([pnl, title, gld])
     const ss = 50, sp = 5, sx = -(8 * (ss + sp)) / 2, sy = -110
     for (let i = 0; i < 20; i++) {
       const c = this.scene.add.container(sx + (i % 8) * (ss + sp), sy + Math.floor(i / 8) * (ss + sp))
       const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x444444, 0.95).setStrokeStyle(1.5, 0x888888).setInteractive({ useHandCursor: true })
       const ic = this.scene.add.image(0, 0, '').setScale(2.5).setVisible(false).setTint(0xffffff)
-      const q = this.scene.add.text(15, 15, '', { fontSize: '14px', color: '#fff', fontStyle: 'bold' }).setOrigin(1).setVisible(false)
+      const q = this.scene.add.text(15, 15, '', { fontSize: '14px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' }).setOrigin(1).setVisible(false)
       c.add([bg, ic, q]); this.slots.push(c)
       bg.on('pointerdown', (p: any, lx: any, ly: any, e: any) => { e.stopPropagation(); this.handleSlotClick(i, p) })
         .on('pointerover', () => this.showTooltip(i)).on('pointerout', () => this.hideTooltip())
@@ -126,8 +126,8 @@ export class InventoryUI {
     const s = this.inventory.getItem(idx); if (!s?.item) return
     const t = this.scene.add.container(this.scene.input.activePointer.worldX + 35, this.scene.input.activePointer.worldY + 35).setDepth(350).setScrollFactor(0)
     const bg = this.scene.add.rectangle(0, 0, 200, 80, 0, 0.9).setStrokeStyle(1, 0xffffff, 0.3)
-    t.add([bg, this.scene.add.text(-90, -30, s.item.name, { fontSize: '16px', color: '#FFD700', fontStyle: 'bold' }),
-      this.scene.add.text(-90, -10, s.item.description, { fontSize: '12px', color: '#ccc', wordWrap: { width: 180 } })])
+    t.add([bg, this.scene.add.text(-90, -30, s.item.name, { fontSize: '16px', color: '#FFD700', fontStyle: 'bold', fontFamily: 'Alagard' }),
+      this.scene.add.text(-90, -10, s.item.description, { fontSize: '12px', color: '#ccc', wordWrap: { width: 180 }, fontFamily: 'Alagard' })])
     this.container.setData('tooltip', t)
   }
 

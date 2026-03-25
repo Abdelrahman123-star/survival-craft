@@ -29,7 +29,7 @@ export default function GameCanvas() {
           default: "arcade",
           arcade: { debug: false }
         },
-        scene: [MainScene, SecretLevelScene],
+        scene: [MainScene,SecretLevelScene],
         scale: {
           mode: Phaser.Scale.RESIZE,
           autoCenter: Phaser.Scale.CENTER_BOTH

@@ -23,9 +23,9 @@ export class MerchantUI {
 
     const ui = this.scene.add.container(0, 0).setDepth(210)
     const panel = this.scene.add.rectangle(0, 0, PW, PH, 0x1a1a1a, 0.95).setStrokeStyle(2, 0xffffff, 0.15)
-    const title = this.scene.add.text(-230, -180, "Merchant", { fontSize: "22px", color: "#fff", fontStyle: "bold" })
-    const coins = this.scene.add.text(230, -180, "", { fontSize: "16px", color: "#FFD700", fontStyle: "bold" }).setOrigin(1, 0).setName("merchantCoinsDisplay")
-    const wood = this.scene.add.text(120, -180, "", { fontSize: "16px", color: "#bff0bf", fontStyle: "bold" }).setOrigin(1, 0).setName("merchantWoodDisplay")
+    const title = this.scene.add.text(-230, -180, "Merchant", { fontSize: "22px", color: "#fff", fontStyle: "bold", fontFamily: "Alagard" })
+    const coins = this.scene.add.text(230, -180, "", { fontSize: "16px", color: "#FFD700", fontStyle: "bold", fontFamily: "Alagard" }).setOrigin(1, 0).setName("merchantCoinsDisplay")
+    const wood = this.scene.add.text(120, -180, "", { fontSize: "16px", color: "#bff0bf", fontStyle: "bold", fontFamily: "Alagard" }).setOrigin(1, 0).setName("merchantWoodDisplay")
     ui.add([panel, title, coins, wood])
 
     const sellBtn = this.makeBtn(0, -100, "Sell All Wood", () => this.updateStatus(this.merchantSystem.sellWood(this.player, -1)))
@@ -36,7 +36,7 @@ export class MerchantUI {
       ui.add(this.makeItemRow(y, item.key, item.label))
     })
 
-    this.statusText = this.scene.add.text(-230, 160, "", { fontSize: "14px", color: "#FFD700" }).setOrigin(0).setName("statusMsg")
+    this.statusText = this.scene.add.text(-230, 160, "", { fontSize: "14px", color: "#FFD700", fontFamily: "Alagard" }).setOrigin(0).setName("statusMsg")
     ui.add(this.statusText)
     return ui
   }
@@ -44,14 +44,14 @@ export class MerchantUI {
   private makeItemRow(y: number, key: string, label: string) {
     const row = this.scene.add.container(0, y)
     const price = ITEM_PRICES[key]
-    const txt = this.scene.add.text(-230, 0, `${label} (🪙 ${price})`, { fontSize: "16px", color: "#fff" }).setOrigin(0, 0.5)
+    const txt = this.scene.add.text(-230, 0, `${label} (🪙 ${price})`, { fontSize: "16px", color: "#fff", fontFamily: "Alagard" }).setOrigin(0, 0.5)
     const buy = this.makeBtn(180, 0, "Buy", () => this.updateStatus(this.merchantSystem.buyItem(this.player, key)), 100)
     row.add([txt, buy])
     return row
   }
 
   private makeBtn(x: number, y: number, label: string, onClick: () => void, w: number = 200) {
-    return this.scene.add.text(x, y, label, { fontSize: "14px", color: "#fff", backgroundColor: "#333", padding: { x: 10, y: 5 }, fixedWidth: w, align: "center" }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on("pointerdown", onClick)
+    return this.scene.add.text(x, y, label, { fontSize: "14px", color: "#fff", backgroundColor: "#333", padding: { x: 10, y: 5 }, fixedWidth: w, align: "center", fontFamily: "Alagard" }).setOrigin(0.5).setInteractive({ useHandCursor: true }).on("pointerdown", onClick)
   }
 
   private updateStatus(m: string) { this.statusText.setText(m); this.refresh() }

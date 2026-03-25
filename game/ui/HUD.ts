@@ -22,14 +22,14 @@ export class HUD {
   private createHUD() {
     this.woodText = this.scene.add
       .text(20, 20, "🪵  Wood: 0", {
-        fontSize: "20px", color: "#e8dcc8", fontFamily: "Georgia",
+        fontSize: "20px", color: "#e8dcc8", fontFamily: "Alagard",
         backgroundColor: "#00000099", padding: { x: 10, y: 5 },
       })
       .setScrollFactor(0).setDepth(10)
 
     this.coinsText = this.scene.add
       .text(20, 56, "🪙  Coins: 0", {
-        fontSize: "20px", color: "#FFD700", fontFamily: "Georgia",
+        fontSize: "20px", color: "#FFD700", fontFamily: "Alagard",
         backgroundColor: "#00000099", padding: { x: 10, y: 5 },
       })
       .setScrollFactor(0).setDepth(10)
@@ -47,13 +47,13 @@ export class HUD {
     this.hpText = this.scene.add.text(barX + barW / 2, barY + 1, `❤ ${PLAYER_MAX_HP}/${PLAYER_MAX_HP}`, {
       fontSize: "14px",
       color: "#ffffff",
-      fontFamily: "Arial",
+      fontFamily: "Alagard",
       fontStyle: "bold",
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(12)
 
     // Level and XP
     this.levelText = this.scene.add.text(20, 125, "Level: 1", {
-      fontSize: "22px", color: "#FFD700", fontFamily: "Georgia",
+      fontSize: "22px", color: "#FFD700", fontFamily: "Alagard",
       fontStyle: "bold", stroke: "#000000", strokeThickness: 3
     }).setScrollFactor(0).setDepth(10)
 
@@ -64,7 +64,7 @@ export class HUD {
 
     // Quests
     this.questText = this.scene.add.text(this.scene.cameras.main.width - 20, 20, "Challenges:", {
-      fontSize: "18px", color: "#ffffff", fontFamily: "Georgia",
+      fontSize: "18px", color: "#ffffff", fontFamily: "Alagard",
       backgroundColor: "#00000066", padding: { x: 10, y: 5 },
       align: "right"
     }).setScrollFactor(0).setDepth(10).setOrigin(1, 0)

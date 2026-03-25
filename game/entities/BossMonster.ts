@@ -10,6 +10,9 @@ export class BossMonster {
   private hpBar: Phaser.GameObjects.Graphics
   private isDead = false
   private isKnockedBack = false
+  public onAttackHit?: (damage: number) => void
+  private lastAttackTime = 0
+  private readonly attackCooldown = 1500
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.scene = scene
@@ -61,6 +64,15 @@ export class BossMonster {
     const angle = Phaser.Math.Angle.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
     body.setVelocity(Math.cos(angle) * this.speed, Math.sin(angle) * this.speed)
     this.sprite.setFlipX(body.velocity.x < 0)
+
+    // Attack logic for SecretLevelScene integration
+    const dist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
+    const now = this.scene.time.now
+    if (dist < 100 && now - this.lastAttackTime > this.attackCooldown) {
+      this.lastAttackTime = now
+      if (this.onAttackHit) this.onAttackHit(this.damageAmount)
+    }
+
     this.drawHealthBar()
   }
 
