@@ -17,6 +17,13 @@ import { VillagerSystem } from "../systems/VillagerSystem"
 import { QuestUI } from "../ui/QuestUI"
 import { Player } from "../entities/Player"
 
+
+import { DayNightSystem } from "../systems/Daynightsystem"
+import { WorldOverlay } from "../systems/WorldOverlay"
+import { DayNightHUD } from "../ui/DayNightHUD"
+import { NightSpawnController } from "../systems/NightSpawnController"
+
+
 export default class MainScene extends Phaser.Scene {
     private treeSystem!: TreeSystem
     private hud!: HUD
@@ -41,6 +48,12 @@ export default class MainScene extends Phaser.Scene {
     private villager!: Phaser.Physics.Arcade.Sprite
 
     private readonly villagerSpawn = { x: 700, y: 1050 }
+
+    private dayNightSystem!: DayNightSystem
+    private worldOverlay!: WorldOverlay
+    private dayNightHUD!: DayNightHUD
+    private nightSpawnController!: NightSpawnController
+    private debugTimeKey!: Phaser.Input.Keyboard.Key
 
     constructor() { super("MainScene") }
 
@@ -132,6 +145,20 @@ export default class MainScene extends Phaser.Scene {
         })
 
         this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.mapSystem.getObstacleLayer())
+
+
+        this.dayNightSystem = new DayNightSystem(this)
+        this.worldOverlay = new WorldOverlay(this)
+        this.dayNightHUD = new DayNightHUD(this)
+        this.nightSpawnController = new NightSpawnController(this.monsterSystem)
+
+
+
+        this.dayNightSystem.onPhaseChange((phase) => {
+            this.nightSpawnController.onPhaseChange(phase)
+        })
+
+
     }
 
     update() {
@@ -153,6 +180,21 @@ export default class MainScene extends Phaser.Scene {
         this.handleInteraction()
         this.handleCombat()
         this.setupInventoryToggle()
+
+
+
+        const dayNightState = this.dayNightSystem.update(this.game.loop.delta)
+        this.worldOverlay.update(dayNightState, this.game.loop.delta)
+        this.dayNightHUD.update(dayNightState)
+
+
+        // Hold T to fast-forward time (debug only)
+        if (this.debugTimeKey.isDown) {
+            this.dayNightSystem.fastForward(0.005) // tweak this speed
+        }
+
+
+
     }
 
     private setupCamera() {
@@ -166,6 +208,7 @@ export default class MainScene extends Phaser.Scene {
         this.interactKey = this.input.keyboard!.addKey("E")
         this.attackKey = this.input.keyboard!.addKey("SPACE")
         this.inventoryKey = this.input.keyboard!.addKey("I")
+        this.debugTimeKey = this.input.keyboard!.addKey("T")
     }
 
     private handleInteraction() {

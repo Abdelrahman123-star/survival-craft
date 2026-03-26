@@ -9,7 +9,7 @@ export const PLAYER_HIT_COOLDOWN_MS = 0
 export const IDLE_ANIM_FRAME_RATE = 3
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 1000
+export const MONSTER_SPAWN_DELAY = 2000
 export const SPIDER_MAX_HP = 6
 export const SPIDER_SPEED = 140
 
@@ -65,3 +65,17 @@ export const SHOP_ITEMS = [
 
 // World Gen
 export const GROUND_TILES = ["ground", "ground", "ground", "ground", "grass", "grass", "flower-grass"]
+
+
+
+// ─── Day / Night ─────────────────────────────────────────────────────────────
+export const DAY_CYCLE_DURATION_MS = 10 * 60 * 1000 // 10 min full cycle — change freely
+
+// What fraction of the cycle each phase occupies (must sum to 1)
+export const DAY_NIGHT_PHASES = {
+  day: 0.45,   // bright daylight
+  sunset: 0.10,   // warm orange fade
+  night: 0.35,   // full darkness
+  sunrise: 0.10,   // cool blue → warm lift
+} as const
+export type DayPhase = keyof typeof DAY_NIGHT_PHASES

@@ -98,13 +98,18 @@ export class Player {
     }
     this.sprite.setVelocity(0)
     let moving = false
+    let vx = 0
+    let vy = 0
 
-    if (keys.left?.isDown) { this.sprite.setVelocityX(-speed); this.currentDirection = "left"; moving = true }
-    if (keys.right?.isDown) { this.sprite.setVelocityX(speed); this.currentDirection = "right"; moving = true }
-    if (keys.up?.isDown) { this.sprite.setVelocityY(-speed); this.currentDirection = "up"; moving = true }
-    if (keys.down?.isDown) { this.sprite.setVelocityY(speed); this.currentDirection = "down"; moving = true }
+    if (keys.left?.isDown) { vx = -1; this.currentDirection = "left"; moving = true }
+    if (keys.right?.isDown) { vx = 1; this.currentDirection = "right"; moving = true }
+    if (keys.up?.isDown) { vy = -1; this.currentDirection = "up"; moving = true }
+    if (keys.down?.isDown) { vy = 1; this.currentDirection = "down"; moving = true }
 
     if (moving) {
+      const vec = new Phaser.Math.Vector2(vx, vy).normalize().scale(speed)
+      this.sprite.setVelocity(vec.x, vec.y)
+
       const animKey = `player-walk-${this.currentDirection}`
       if (this.sprite.anims.currentAnim?.key !== animKey) {
         this.sprite.anims.play(animKey, true)

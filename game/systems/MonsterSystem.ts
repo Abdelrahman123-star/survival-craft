@@ -111,4 +111,14 @@ export class MonsterSystem {
     this.monsterSprites = []
     this.monsterGroup.clear(true, true)
   }
+
+
+
+  private spawnMultiplier = 1.0
+
+  setSpawnMultiplier(multiplier: number) {
+    this.spawnMultiplier = multiplier
+  }
+
+
 }
