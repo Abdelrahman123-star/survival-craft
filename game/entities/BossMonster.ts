@@ -1,4 +1,4 @@
-import * as Phaser from "phaser"
+import { BOSS_ATTACK_RANGE, BOSS_WINDUP_MS, BOSS_ATTACK_COOLDOWN } from "../config/constants"
 
 export class BossMonster {
   public sprite: Phaser.Physics.Arcade.Sprite
@@ -12,7 +12,9 @@ export class BossMonster {
   private isKnockedBack = false
   public onAttackHit?: (damage: number) => void
   private lastAttackTime = 0
-  private readonly attackCooldown = 1500
+  private attackStartTime = 0
+  private isAttacking = false
+  private attackWarningGraphics: Phaser.GameObjects.Graphics
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     this.scene = scene
@@ -21,11 +23,12 @@ export class BossMonster {
     this.speed = 92
     this.damageAmount = 12
 
-    this.sprite = scene.physics.add.sprite(x, y, "boss").setScale(6.5).setDepth(2)
+    this.sprite = scene.physics.add.sprite(x, y, "boss").setScale(6.5).setDepth(6)
     this.sprite.setTint(0x9f5cff)
     this.sprite.setCollideWorldBounds(true)
 
     this.hpBar = scene.add.graphics()
+    this.attackWarningGraphics = scene.add.graphics()
     this.drawHealthBar()
   }
 
@@ -61,19 +64,72 @@ export class BossMonster {
       }
     }
 
-    const angle = Phaser.Math.Angle.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
-    body.setVelocity(Math.cos(angle) * this.speed, Math.sin(angle) * this.speed)
-    this.sprite.setFlipX(body.velocity.x < 0)
-
-    // Attack logic for SecretLevelScene integration
     const dist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
     const now = this.scene.time.now
-    if (dist < 100 && now - this.lastAttackTime > this.attackCooldown) {
-      this.lastAttackTime = now
-      if (this.onAttackHit) this.onAttackHit(this.damageAmount)
+
+    if (this.isAttacking) {
+      const angle = Phaser.Math.Angle.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
+      const slowSpeed = this.speed * 0.15 // Even slower for the boss
+      body.setVelocity(Math.cos(angle) * slowSpeed, Math.sin(angle) * slowSpeed)
+
+      this.drawAttackWarning()
+      this.drawHealthBar()
+      return
+    }
+
+    if (dist < BOSS_ATTACK_RANGE && now - this.lastAttackTime > BOSS_ATTACK_COOLDOWN) {
+      this.startAttack(playerSprite)
+    } else {
+      const angle = Phaser.Math.Angle.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
+      body.setVelocity(Math.cos(angle) * this.speed, Math.sin(angle) * this.speed)
+      this.sprite.setFlipX(body.velocity.x < 0)
     }
 
     this.drawHealthBar()
+  }
+
+  private startAttack(playerSprite: Phaser.Physics.Arcade.Sprite) {
+    this.isAttacking = true
+    this.attackStartTime = this.scene.time.now
+    this.scene.time.delayedCall(BOSS_WINDUP_MS, () => {
+      if (this.isActive() && this.isAttacking) {
+        this.executeAttack(playerSprite)
+      }
+    })
+  }
+
+  private executeAttack(playerSprite: Phaser.Physics.Arcade.Sprite) {
+    const dist = Phaser.Math.Distance.Between(this.sprite.x, this.sprite.y, playerSprite.x, playerSprite.y)
+    if (dist <= BOSS_ATTACK_RANGE && this.onAttackHit) {
+      this.onAttackHit(this.damageAmount)
+    }
+    this.isAttacking = false
+    this.lastAttackTime = this.scene.time.now
+    if (this.attackWarningGraphics) this.attackWarningGraphics.clear()
+  }
+
+  private drawAttackWarning() {
+    if (!this.attackWarningGraphics) return
+    this.attackWarningGraphics.clear()
+
+    const elapsed = this.scene.time.now - this.attackStartTime
+    const progress = Math.min(elapsed / BOSS_WINDUP_MS, 1)
+
+    // Outer ring — shows full attack range
+    this.attackWarningGraphics.lineStyle(3, 0xff0000, 0.6)
+    this.attackWarningGraphics.strokeCircle(this.sprite.x, this.sprite.y, BOSS_ATTACK_RANGE)
+
+    // Inner charging fill — grows from center outward
+    this.attackWarningGraphics.fillStyle(0xff0000, 0.12 + progress * 0.4)
+    this.attackWarningGraphics.fillCircle(this.sprite.x, this.sprite.y, BOSS_ATTACK_RANGE * progress)
+
+    // Charging ring edge
+    if (progress < 1) {
+      this.attackWarningGraphics.lineStyle(4, 0xff4444, 0.9)
+      this.attackWarningGraphics.strokeCircle(this.sprite.x, this.sprite.y, BOSS_ATTACK_RANGE * progress)
+    }
+
+    this.attackWarningGraphics.setDepth(5)
   }
 
   takeDamage(amount: number): boolean {
@@ -131,6 +187,7 @@ export class BossMonster {
 
   destroy() {
     this.hpBar.destroy()
+    this.attackWarningGraphics.destroy()
     this.sprite.destroy()
   }
 }

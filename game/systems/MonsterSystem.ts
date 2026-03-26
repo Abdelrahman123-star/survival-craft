@@ -43,7 +43,7 @@ export class MonsterSystem {
     this.updateMonsterSprites()
   }
 
-  update(player: Player) {
+  update(player: Player, onAttack?: (damage: number) => void) {
     // First, remove any dead monsters
     this.monsters = this.monsters.filter(monster => {
       const isActive = monster.isActive()
@@ -59,7 +59,7 @@ export class MonsterSystem {
 
     // Then update remaining monsters
     this.monsters.forEach(monster => {
-      monster.update(player.sprite)
+      monster.update(player.sprite, onAttack)
     })
   }
 

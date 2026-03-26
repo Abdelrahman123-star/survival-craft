@@ -46,8 +46,9 @@ export default class MainScene extends Phaser.Scene {
 
     preload() {
         document.fonts.load('16px Alagard')
+        this.load.spritesheet("player", "/assets/Charachter Animation/CharachterAnimation.png", { frameWidth: 48, frameHeight: 48 })
         const assets: Record<string, string> = {
-            player: "/assets/player.png", ground: "/assets/plain-grass.png",
+            ground: "/assets/plain-grass.png",
             "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
             tree_bottom: "/assets/tree.png",
             spider: "/assets/spider.png", merchant: "/assets/merchant.png",
@@ -126,11 +127,8 @@ export default class MainScene extends Phaser.Scene {
         })
 
         this.physics.add.overlap(this.player.sprite, this.monsterSystem.getMonsterGroup(), (p, m) => {
-            if (this.player.isDead) return
-            if (this.combatSystem.handlePlayerHit(this.player, m as Phaser.Physics.Arcade.Sprite, this.time.now)) {
-                this.player.playDeathAnimation(() => this.scene.restart())
-            }
-            this.hud.update(this.player, this.questSystem)
+            // Collision is now mostly for physical blocking or potential knockback, 
+            // damage is handled by the monster's attack windup in update()
         })
 
         this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.mapSystem.getObstacleLayer())
@@ -139,7 +137,12 @@ export default class MainScene extends Phaser.Scene {
     update() {
         this.player.updateMovement(this.keys, PLAYER_SPEED)
         this.player.updateWeaponFollow()
-        this.monsterSystem.update(this.player)
+        this.monsterSystem.update(this.player, (damage) => {
+            if (this.player.isDead) return
+            if (this.combatSystem.applyMonsterDamage(this.player, damage)) {
+                this.player.playDeathAnimation(() => this.scene.restart())
+            }
+        })
         this.hud.update(this.player, this.questSystem)
         this.inventoryUI.update()
         this.craftingUI.update()

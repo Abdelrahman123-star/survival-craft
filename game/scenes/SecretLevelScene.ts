@@ -45,8 +45,8 @@ export default class SecretLevelScene extends Phaser.Scene {
   }
 
   preload() {
+    this.load.spritesheet("player", "/assets/Charachter Animation/CharachterAnimation.png", { frameWidth: 48, frameHeight: 48 })
     const assets: Record<string, string> = {
-      player: "/assets/player.png",
       "wood-sword": "/assets/wood-sword.png",
       hammer: "/assets/hammer.png",
       "wood-planks": "/assets/wood-planks.jpg",
@@ -105,6 +105,13 @@ export default class SecretLevelScene extends Phaser.Scene {
     this.player = new Player(this, spawnPoint.x, spawnPoint.y)
     this.spawnBoss(map, spawnPoint)
 
+    this.boss.onAttackHit = (damage) => {
+      if (this.player.isDead) return
+      if (this.combatSystem.applyMonsterDamage(this.player, damage)) {
+        this.player.playDeathAnimation(() => this.scene.restart())
+      }
+    }
+
     this.buildingSystem = new BuildingSystem(this)
     this.questSystem = new QuestSystem(this)
     this.combatSystem = new CombatSystem(this, this.createBossMonsterSystem())
@@ -119,11 +126,7 @@ export default class SecretLevelScene extends Phaser.Scene {
     this.physics.add.collider(this.boss.sprite, this.buildingSystem.getBlocksGroup())
 
     this.physics.add.overlap(this.player.sprite, this.boss.sprite, (_, bossSprite) => {
-      if (!this.boss.isActive() || this.player.isDead) return
-      if (this.combatSystem.handlePlayerHit(this.player, bossSprite as Phaser.Physics.Arcade.Sprite, this.time.now)) {
-        this.player.playDeathAnimation(() => this.scene.restart())
-      }
-      this.hud.update(this.player, this.questSystem)
+      // Boss damage is now handled by its windup logic
     })
 
     this.doorPair = this.findDoorPair(map)
