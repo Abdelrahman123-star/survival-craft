@@ -12,7 +12,7 @@ export class Player {
   public level = 1
   public xp = 0
   public xpToNextLevel = 100
-  public inventory = new Inventory(20)
+  public inventory = new Inventory(25)
   public lastAttackAt = 0
   public lastHitAt = 0
   public equippedItemId: string | null = null

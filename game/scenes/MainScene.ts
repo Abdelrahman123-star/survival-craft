@@ -1,4 +1,5 @@
 import * as Phaser from "phaser"
+import { UIManager } from "../ui/UIManager"
 import { TreeSystem } from "../systems/TreeSystem"
 import { HUD } from "../ui/HUD"
 import { QuestSystem } from "../systems/QuestSystem"
@@ -40,6 +41,7 @@ export default class MainScene extends Phaser.Scene {
     private villagerSystem!: VillagerSystem
     private questUI!: QuestUI
     private player!: Player
+    private uiManager!: UIManager
     private keys!: Record<string, Phaser.Input.Keyboard.Key>
     private interactKey!: Phaser.Input.Keyboard.Key
     private attackKey!: Phaser.Input.Keyboard.Key
@@ -80,6 +82,10 @@ export default class MainScene extends Phaser.Scene {
         }
         Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
         this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
+        this.load.image("craftTiles", "/assets/ui/crafting-ui/craftTiles.png")
+        this.load.tilemapTiledJSON("craft-tilemap", "/assets/ui/crafting-ui/craft-tilemap.json")
+        this.load.image("inventory-tilemap", "/assets/ui/inventory/inventoryTilemap.png")
+        this.load.tilemapTiledJSON("inventory-map", "/assets/ui/inventory/inventoryMap.json")
     }
 
     create() {
@@ -114,17 +120,22 @@ export default class MainScene extends Phaser.Scene {
 
         this.combatSystem = new CombatSystem(this, this.monsterSystem)
         this.hud = new HUD(this)
+        this.uiManager = new UIManager()
         this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
         this.merchantSystem = new MerchantSystem(this, 750, 600, this.player, this.inventoryUI)
         this.craftingSystem = new CraftingSystem()
         this.craftingUI = new CraftingUI(this)
-        this.inventoryUI.setCraftingUI(this.craftingUI)
+
+        this.uiManager.registerUI("inventory", this.inventoryUI)
+        this.uiManager.registerUI("crafting", this.craftingUI)
+
         this.craftingTable = new CraftingTable(this, 850, 750)
         this.buildingSystem = new BuildingSystem(this)
 
         // Quest UI and Villager System
         this.questUI = new QuestUI(this)
         this.villagerSystem = new VillagerSystem(this, this.questSystem, this.questUI)
+        this.uiManager.registerUI("quest", this.questUI)
 
         this.physics.add.collider(this.villager, this.mapSystem.getObstacleLayer())
 
@@ -171,8 +182,7 @@ export default class MainScene extends Phaser.Scene {
             }
         })
         this.hud.update(this.player, this.questSystem)
-        this.inventoryUI.update()
-        this.craftingUI.update()
+        this.uiManager.update()
         this.merchantSystem.update()
         this.buildingSystem.update(this.player, this.inventoryUI.getSelectedHotbarItem())
         this.villagerSystem.update()
@@ -240,8 +250,7 @@ export default class MainScene extends Phaser.Scene {
         if (Math.sqrt(dx * dx + dy * dy) < 80) {
             if (this.craftingUI.isOpenNow()) this.craftingUI.hide()
             else {
-                this.craftingUI.show(this.player, this.craftingSystem, this.inventoryUI)
-                if (!this.inventoryUI.isOpenNow()) this.inventoryUI.toggle()
+                this.craftingUI.show(this.player, this.craftingSystem)
             }
             return
         }

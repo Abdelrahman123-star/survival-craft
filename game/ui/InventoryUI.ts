@@ -1,8 +1,27 @@
 import * as Phaser from "phaser"
 import { Inventory, InventorySlot } from "../entities/Inventory"
 import { ITEMS } from "../config/items"
+import { IUI } from "./IUI"
+import { UIManager } from "./UIManager"
+import { TilemapUIBackground } from "./TilemapUIBackground"
 
-export class InventoryUI {
+// Layout Constants
+const UI_SCALE = 3.5
+const TILE_SIZE = 16
+const SLOT_SIZE = 50
+const SLOT_STEP = TILE_SIZE * UI_SCALE // 56px
+
+// Inventory Grid (Left 5x5)
+const INV_GRID_START_X = -196 // Row 2, Col 1 (-56 * 3.5)
+const INV_GRID_START_Y = -84  // Row 2, Col 1 (-24 * 3.5)
+
+// Mini-Crafting (Right 2x2 placeholder) For Later,
+const CRAFT_GRID_X = 140
+const CRAFT_GRID_Y = 28
+const OUTPUT_SLOT_X = 140
+const OUTPUT_SLOT_Y = 112
+
+export class InventoryUI implements IUI {
   private static readonly HOTBAR_SLOTS = 9
   private scene: Phaser.Scene
   private inventory: Inventory
@@ -16,7 +35,8 @@ export class InventoryUI {
   private lastPlacedGridSlot: { r: number, c: number } | null = null
 
   private player: any
-  private craftingUI: any
+  private uiManager!: UIManager
+  private get craftingUI(): any { return this.uiManager?.getUI("crafting") }
   private hotbarSlots: Phaser.GameObjects.Container[] = []
   private selectedHotbarIndex: number = 0
 
@@ -32,7 +52,7 @@ export class InventoryUI {
     const ss = 50, sp = 5, sx = -(InventoryUI.HOTBAR_SLOTS * (ss + sp)) / 2
     for (let i = 0; i < InventoryUI.HOTBAR_SLOTS; i++) {
       const c = this.scene.add.container(sx + i * (ss + sp), 0)
-      const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x333333, 0.8).setStrokeStyle(2, i === 0 ? 0xFFD700 : 0x666666).setInteractive({ useHandCursor: true })
+      const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x333333, 0.8).setStrokeStyle(2, i === this.selectedHotbarIndex ? 0xFFD700 : 0x666666).setInteractive({ useHandCursor: true })
       const ic = this.scene.add.image(0, 0, '').setScale(2).setVisible(false)
       const q = this.scene.add.text(15, 15, '', { fontSize: '12px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' }).setOrigin(1).setVisible(false)
       c.add([bg, this.scene.add.text(-15, -15, (i + 1).toString(), { fontSize: '10px', color: '#ccc', fontFamily: 'Alagard' }), ic, q])
@@ -45,26 +65,64 @@ export class InventoryUI {
   private createInventoryUI() {
     this.overlay = this.scene.add.rectangle(0, 0, this.scene.scale.width, this.scene.scale.height, 0x000000, 0.6)
       .setDepth(200).setVisible(false).setInteractive().on('pointerdown', () => this.toggle())
+
     this.container = this.scene.add.container(0, 0).setDepth(201).setVisible(false)
-    const pnl = this.scene.add.rectangle(0, 0, 500, 400, 0x222222, 0.98).setStrokeStyle(2, 0xffffff, 0.3).setInteractive().on('pointerdown', (p: any, lx: any, ly: any, e: any) => e.stopPropagation())
-    const title = this.scene.add.text(-230, -180, 'Inventory', { fontSize: '24px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' })
-    const gld = this.scene.add.text(150, -180, '', { fontSize: '20px', color: '#FFD700', fontFamily: 'Alagard' })
-    this.container.add([pnl, title, gld])
-    const ss = 50, sp = 5, sx = -(8 * (ss + sp)) / 2, sy = -110
-    for (let i = 0; i < 20; i++) {
-      const c = this.scene.add.container(sx + (i % 8) * (ss + sp), sy + Math.floor(i / 8) * (ss + sp))
-      const bg = this.scene.add.rectangle(0, 0, ss, ss, 0x444444, 0.95).setStrokeStyle(1.5, 0x888888).setInteractive({ useHandCursor: true })
-      const ic = this.scene.add.image(0, 0, '').setScale(2.5).setVisible(false).setTint(0xffffff)
-      const q = this.scene.add.text(15, 15, '', { fontSize: '14px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' }).setOrigin(1).setVisible(false)
-      c.add([bg, ic, q]); this.slots.push(c)
+
+    // ── Background Tilemap ──────────────────
+    new TilemapUIBackground(this.scene, "inventory-map", "inventory-tilemap", 0, 0, UI_SCALE, this.container)
+
+    // ── Invisible hit-blocker for the whole panel ──────────────────────────
+    const blocker = this.scene.add.rectangle(0, 0, 160 * UI_SCALE, 128 * UI_SCALE, 0x000000, 0)
+      .setInteractive()
+      .on("pointerdown", (_: any, __: any, ___: any, e: { stopPropagation: () => void }) => e.stopPropagation())
+    this.container.add(blocker)
+
+    // ── Invisible Close Button zone (at the top-right of the header) ──────
+    // The X icon in the background is approx at scaled pos (250, -200)
+    const closeZone = this.scene.add.rectangle(65, -150, 48, 48, 0xff0000, 0)
+      .setInteractive({ useHandCursor: true })
+      .on("pointerdown", () => this.toggle())
+    this.container.add(closeZone)
+
+    // ── Gold Display ──────────────────────────────────────────────────────
+    const goldText = this.scene.add.text(250, 195, '', {
+      fontSize: '20px',
+      color: '#FFD700',
+      fontStyle: 'bold',
+      fontFamily: 'Alagard'
+    }).setOrigin(1, 0.5).setName("goldDisplay")
+    this.container.add(goldText)
+
+
+    // 5x5 Inventory Grid
+    for (let i = 0; i < 25; i++) {
+      const r = Math.floor(i / 5)
+      const c = i % 5
+      const slot = this.createSlot(INV_GRID_START_X + c * SLOT_STEP, INV_GRID_START_Y + r * SLOT_STEP, SLOT_SIZE)
+      this.slots.push(slot)
+      const bg = slot.getAt(0) as Phaser.GameObjects.Rectangle
       bg.on('pointerdown', (p: any, lx: any, ly: any, e: any) => { e.stopPropagation(); this.handleSlotClick(i, p) })
         .on('pointerover', () => this.showTooltip(i)).on('pointerout', () => this.hideTooltip())
-      this.container.add(c)
+      this.container.add(slot)
     }
   }
 
+  private createSlot(x: number, y: number, size: number): Phaser.GameObjects.Container {
+    const c = this.scene.add.container(x, y)
+    const bg = this.scene.add.rectangle(0, 0, size, size, 0x444444, 0).setStrokeStyle(1.5, 0x000000, 0).setInteractive({ useHandCursor: true })
+    const ic = this.scene.add.image(0, 0, '').setScale(2.5).setVisible(false).setTint(0xffffff)
+    const q = this.scene.add.text(size / 2 - 5, size / 2 - 5, '', { fontSize: '14px', color: '#fff', fontStyle: 'bold', fontFamily: 'Alagard' }).setOrigin(1).setVisible(false)
+    c.add([bg, ic, q]); return c
+  }
+
   private setupHotbarControls() { const ks = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE']; ks.forEach((k, i) => this.scene.input.keyboard?.on(`keydown-${k}`, () => this.selectHotbarSlot(i))) }
-  public selectHotbarSlot(idx: number) { this.selectedHotbarIndex = Phaser.Math.Clamp(idx, 0, InventoryUI.HOTBAR_SLOTS - 1); this.hotbarSlots.forEach((s, i) => (s.getAt(0) as any).setStrokeStyle(2, i === this.selectedHotbarIndex ? 0xFFD700 : 0x666666)); this.syncPlayerEquipment() }
+
+  public selectHotbarSlot(idx: number) {
+    this.selectedHotbarIndex = Phaser.Math.Clamp(idx, 0, InventoryUI.HOTBAR_SLOTS - 1)
+    this.hotbarSlots.forEach((s, i) => (s.getAt(0) as any).setStrokeStyle(2, i === this.selectedHotbarIndex ? 0xFFD700 : 0x666666))
+    this.syncPlayerEquipment()
+  }
+
   private handleSlotClick(idx: number, p: any) { const s = this.inventory.getItem(idx); if (s?.item) this.startDrag(idx, s) }
 
   startDrag(idx: number | string, s: InventorySlot) {
@@ -76,10 +134,19 @@ export class InventoryUI {
 
   private endDrag() {
     if (!this.dragSlot || !this.dragSprite) return
-    const x = this.scene.input.activePointer.worldX, y = this.scene.input.activePointer.worldY, gp = this.craftingUI?.getSlotAtPosition(x, y)
-    if (gp && this.dragSlot.slot.quantity > 0) {
-      const cns = this.craftingUI.handleDrop(gp.r, gp.c, this.dragSlot.slot.item!.id, this.dragSlot.slot.quantity)
+    const x = this.scene.input.activePointer.worldX, y = this.scene.input.activePointer.worldY, drop = this.craftingUI?.getSlotAtPosition(x, y)
+
+    if (drop && drop.type === 'craft' && this.dragSlot.slot.quantity > 0) {
+      const cns = this.craftingUI.handleDrop(drop.r, drop.c, this.dragSlot.slot.item!.id, this.dragSlot.slot.quantity)
       if (cns > 0) this.removeItemsFromSource(cns)
+    } else if (drop && drop.type === 'inventory') {
+      const targetIdx = drop.index
+      if (typeof this.dragSlot.index === "number") {
+        this.inventory.swapSlots(this.dragSlot.index, targetIdx)
+      } else {
+        // Coming from crafting slot back to inventory
+        this.inventory.addItem(this.dragSlot.slot.item!, this.dragSlot.slot.quantity)
+      }
     } else {
       const invIdx = this.getSlotAtPosition(x, y)
       if (invIdx !== -1 && typeof this.dragSlot.index === "number" && invIdx !== this.dragSlot.index) this.inventory.swapSlots(this.dragSlot.index, invIdx)
@@ -88,6 +155,7 @@ export class InventoryUI {
     }
     this.dragSprite.destroy(); this.dragSprite = null; this.dragSlot = null; this.lastPlacedGridSlot = null
     this.refreshUI(); this.syncPlayerEquipment()
+    if (this.craftingUI?.isOpenNow()) this.craftingUI.updateUI()
   }
 
   private removeItemsFromSource(count: number) {
@@ -115,7 +183,6 @@ export class InventoryUI {
   private getSlotAtPosition(x: number, y: number): number {
     for (let i = 0; i < this.slots.length; i++) {
       const bg = this.slots[i].getAt(0) as Phaser.GameObjects.Rectangle
-      // Using world Coordinates matched against pointer.worldX/Y
       const bounds = bg.getBounds()
       if (x >= bounds.x && x <= bounds.right && y >= bounds.y && y <= bounds.bottom) return i
     }
@@ -134,10 +201,15 @@ export class InventoryUI {
   private hideTooltip() { const t = this.container.getData('tooltip'); if (t) t.destroy(); this.container.setData('tooltip', null) }
 
   refreshUI() {
-    const gld = this.container.list[2] as Phaser.GameObjects.Text; if (gld) gld.setText(`🪙 ${this.inventory.getGold()}`)
+    const goldText = this.container.getByName("goldDisplay") as Phaser.GameObjects.Text;
+    if (goldText) {
+      goldText.setText(`🪙 ${this.inventory.getGold()}`)
+    }
+
     const slts = this.inventory.getAllSlots()
     slts.forEach((s, i) => {
-      const c = this.slots[i]; if (!c) return
+      if (i >= this.slots.length) return
+      const c = this.slots[i]
       const ic = c.getAt(1) as any, q = c.getAt(2) as any
       if (s.item) { ic.setTexture(s.item.icon).setVisible(true); q.setText(s.quantity.toString()).setVisible(s.quantity > 1) }
       else { ic.setVisible(false); q.setVisible(false) }
@@ -151,8 +223,7 @@ export class InventoryUI {
 
   updatePosition() {
     const cam = this.scene.cameras.main
-    const screenX = this.craftingUI?.isOpenNow() ? this.scene.scale.width * 0.72 : this.scene.scale.width / 2
-    this.container.setPosition(cam.scrollX + screenX, cam.scrollY + this.scene.scale.height / 2)
+    this.container.setPosition(cam.scrollX + this.scene.scale.width / 2, cam.scrollY + this.scene.scale.height / 2)
     this.overlay.setPosition(cam.scrollX + this.scene.scale.width / 2, cam.scrollY + this.scene.scale.height / 2)
   }
 
@@ -166,11 +237,8 @@ export class InventoryUI {
 
   update() {
     const cam = this.scene.cameras.main
-    // Always sync Hotbar to camera
     this.hotbarContainer.setPosition(cam.scrollX + this.scene.scale.width / 2, cam.scrollY + this.scene.scale.height - 70)
-
     if (this.isOpen) this.updatePosition()
-
     if (this.dragSprite) {
       this.dragSprite.setPosition(this.scene.input.activePointer.worldX, this.scene.input.activePointer.worldY)
       this.handleDragUpdate()
@@ -181,5 +249,5 @@ export class InventoryUI {
   getSelectedHotbarItem(): InventorySlot | null { return this.inventory.getItem(this.selectedHotbarIndex) }
   getSelectedHotbarIndex(): number { return this.selectedHotbarIndex }
   isOpenNow(): boolean { return this.isOpen }
-  setCraftingUI(c: any) { this.craftingUI = c }
+  setManager(manager: UIManager) { this.uiManager = manager }
 }

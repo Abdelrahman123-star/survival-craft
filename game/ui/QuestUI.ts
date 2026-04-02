@@ -1,12 +1,12 @@
-import * as Phaser from "phaser"
 import { Quest } from "../systems/QuestSystem"
+import { IUI } from "./IUI"
 
 /**
  * QuestUI — Dark Fantasy Panel
  * Full redesign: dramatic parchment-style quest card with
  * glowing reward badge, animated runes, and crisp CTA buttons.
  */
-export class QuestUI {
+export class QuestUI implements IUI {
     private scene: Phaser.Scene
     private container: Phaser.GameObjects.Container
     private overlay: Phaser.GameObjects.Rectangle
@@ -61,7 +61,7 @@ export class QuestUI {
             .setDepth(1000)
             .setVisible(false)
             .setInteractive() // block clicks behind panel
-            this.overlay.disableInteractive()
+        this.overlay.disableInteractive()
         // ── Main Container ────────────────────────────────────────────────
         this.container = scene.add.container(cam.centerX, cam.centerY)
         this.container.setScrollFactor(0).setDepth(1001)
