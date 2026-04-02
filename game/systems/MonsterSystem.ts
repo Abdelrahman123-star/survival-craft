@@ -8,7 +8,7 @@ export class MonsterSystem {
   private scene: Phaser.Scene
   private monsterSprites: Phaser.Physics.Arcade.Sprite[] = [] // Track sprites separately
   private monsterGroup: Phaser.Physics.Arcade.Group
-  public onMonsterDeath?: (type: string) => void
+  public onMonsterDeath?: (type: string, x: number, y: number) => void
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -82,7 +82,7 @@ export class MonsterSystem {
   damageMonster(monster: Monster, damage: number): boolean {
     const died = monster.damage(damage, this.scene)
     if (died) {
-      if (this.onMonsterDeath) this.onMonsterDeath(monster.type)
+      if (this.onMonsterDeath) this.onMonsterDeath(monster.type, monster.sprite.x, monster.sprite.y)
       // Immediately remove from our arrays
       this.monsters = this.monsters.filter(m => m !== monster)
       this.monsterGroup.remove(monster.sprite, true, false)

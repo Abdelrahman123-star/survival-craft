@@ -69,9 +69,9 @@ export class CraftingSystem {
       outputItemId: "basic-bow",
       outputQty: 1,
       pattern: [
-        [null, "stick", "wood-planks"],
-        ["stick", null, "wood-planks"],
-        [null, "stick", "wood-planks"],
+        [null, "spider-web", "wood-planks"],
+        ["spider-web", null, "wood-planks"],
+        [null, "spider-web", "wood-planks"],
       ],
     },
   ]

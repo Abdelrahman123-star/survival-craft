@@ -128,7 +128,10 @@ export class InventoryUI implements IUI {
   startDrag(idx: number | string, s: InventorySlot) {
     if (this.dragSprite) this.endDrag()
     this.dragSlot = { index: idx, slot: { ...s } }
-    this.dragSprite = this.scene.add.image(this.scene.input.activePointer.worldX, this.scene.input.activePointer.worldY, s.item!.icon).setScale(3.5).setDepth(300).setTint(0xffffff)
+    const tex = this.scene.textures.get(s.item!.icon)
+    const width = (tex.getSourceImage() as any).width || 16
+    const dragScale = width > 20 ? 1.75 : 3.5
+    this.dragSprite = this.scene.add.image(this.scene.input.activePointer.worldX, this.scene.input.activePointer.worldY, s.item!.icon).setScale(dragScale).setDepth(300).setTint(0xffffff)
     if (typeof idx === "number") { const sc = this.slots[idx]; (sc.getAt(1) as any).setVisible(false); (sc.getAt(2) as any).setVisible(false) }
   }
 
@@ -152,6 +155,14 @@ export class InventoryUI implements IUI {
       if (invIdx !== -1 && typeof this.dragSlot.index === "number" && invIdx !== this.dragSlot.index) this.inventory.swapSlots(this.dragSlot.index, invIdx)
       else if (invIdx !== -1 && typeof this.dragSlot.index === "string") this.inventory.addItem(this.dragSlot.slot.item!, this.dragSlot.slot.quantity)
       else if (typeof this.dragSlot.index === "string") this.returnItemsToSource()
+      else {
+        // Dropped outside all UI: trigger drop on ground
+        this.scene.events.emit('itemDroppedOutside', {
+          item: this.dragSlot.slot.item,
+          quantity: this.dragSlot.slot.quantity
+        })
+        this.removeItemsFromSource(this.dragSlot.slot.quantity)
+      }
     }
     this.dragSprite.destroy(); this.dragSprite = null; this.dragSlot = null; this.lastPlacedGridSlot = null
     this.refreshUI(); this.syncPlayerEquipment()
@@ -205,18 +216,29 @@ export class InventoryUI implements IUI {
     if (goldText) {
       goldText.setText(`🪙 ${this.inventory.getGold()}`)
     }
-
     const slts = this.inventory.getAllSlots()
     slts.forEach((s, i) => {
       if (i >= this.slots.length) return
       const c = this.slots[i]
       const ic = c.getAt(1) as any, q = c.getAt(2) as any
-      if (s.item) { ic.setTexture(s.item.icon).setVisible(true); q.setText(s.quantity.toString()).setVisible(s.quantity > 1) }
+      if (s.item) {
+        const tex = this.scene.textures.get(s.item.icon)
+        const width = (tex.getSourceImage() as any).width || 16
+        const scale = width > 20 ? 1.25 : 2.5
+        ic.setTexture(s.item.icon).setScale(scale).setVisible(true)
+        q.setText(s.quantity.toString()).setVisible(s.quantity > 1)
+      }
       else { ic.setVisible(false); q.setVisible(false) }
     })
     this.hotbarSlots.forEach((c, i) => {
       const s = slts[i], ic = c.getAt(2) as any, q = c.getAt(3) as any
-      if (s?.item) { ic.setTexture(s.item.icon).setVisible(true); q.setText(s.quantity.toString()).setVisible(s.quantity > 1) }
+      if (s?.item) {
+        const tex = this.scene.textures.get(s.item.icon)
+        const width = (tex.getSourceImage() as any).width || 16
+        const scale = width > 20 ? 1 : 2
+        ic.setTexture(s.item.icon).setScale(scale).setVisible(true)
+        q.setText(s.quantity.toString()).setVisible(s.quantity > 1)
+      }
       else { ic.setVisible(false); q.setVisible(false) }
     })
   }

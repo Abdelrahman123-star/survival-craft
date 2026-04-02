@@ -140,7 +140,15 @@ export class Player {
   updateWeaponVisual() {
     const show = !!this.equippedItemId
     if (show && this.equippedItemId) {
-      this.weaponSprite.setTexture(ITEMS[this.equippedItemId]?.icon ?? "wood-sword")
+      const icon = ITEMS[this.equippedItemId]?.icon ?? "wood-sword"
+      this.weaponSprite.setTexture(icon)
+
+      // Dynamic scaling for held items to support both 16x16 and 32x32 icons
+      const tex = this.sprite.scene.textures.get(icon)
+      const width = (tex.getSourceImage() as any).width || 16
+      const baseScale = 2.1
+      const scale = width > 20 ? baseScale / 2 : baseScale
+      this.weaponSprite.setScale(scale)
     }
     this.weaponSprite.setVisible(show)
     this.updateWeaponFollow()

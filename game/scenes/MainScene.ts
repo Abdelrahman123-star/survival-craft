@@ -7,6 +7,7 @@ import { CombatSystem } from "../systems/CombatSystem"
 import { MonsterSystem } from "../systems/MonsterSystem"
 import { PLAYER_SPEED, WORLD_SIZE } from "../config/constants"
 import { ITEMS } from "../config/items"
+import { LOOT_TABLES } from "../config/loot"
 import { InventoryUI } from "../ui/InventoryUI"
 import { MerchantSystem } from "../systems/MerchantSystem"
 import { CraftingSystem } from "../systems/CraftingSystem"
@@ -23,6 +24,7 @@ import { DayNightSystem } from "../systems/Daynightsystem"
 import { WorldOverlay } from "../systems/WorldOverlay"
 import { DayNightHUD } from "../ui/DayNightHUD"
 import { NightSpawnController } from "../systems/NightSpawnController"
+import { DropSystem } from "../systems/DropSystem"
 
 
 export default class MainScene extends Phaser.Scene {
@@ -56,7 +58,10 @@ export default class MainScene extends Phaser.Scene {
     private dayNightHUD!: DayNightHUD
     private nightSpawnController!: NightSpawnController
     private debugTimeKey!: Phaser.Input.Keyboard.Key
+    private dropSystem!: DropSystem
+    private dropKey!: Phaser.Input.Keyboard.Key
 
+    private debugText!: Phaser.GameObjects.Text
     constructor() { super("MainScene") }
 
     preload() {
@@ -79,6 +84,9 @@ export default class MainScene extends Phaser.Scene {
             "quest-available": "/assets/interface/Questavailable.png",
             "quest-active": "/assets/interface/Questactive.png",
             villager: "/assets/villiger.png",
+            "spider-web": "/assets/loot/spider_web.png",
+            "spider-eye": "/assets/loot/spider_eye.png",
+            feather: "/assets/loot/feather.png",
         }
         Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
         this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
@@ -89,6 +97,13 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
+        // Debugging
+        // this.debugText = this.add.text(10, 10, '', {
+        //     fontSize: '14px',
+        //     color: '#00ff00',
+        //     backgroundColor: '#00000088',
+        //     padding: { x: 5, y: 5 }
+        // }).setScrollFactor(0).setDepth(999)        // stop here
         window.addEventListener("contextmenu", (e) => e.preventDefault())
         this.game.canvas.oncontextmenu = () => false
         this.setupControls()
@@ -110,12 +125,28 @@ export default class MainScene extends Phaser.Scene {
         this.monsterSystem = new MonsterSystem(this)
         this.questSystem = new QuestSystem(this)
 
-        this.monsterSystem.onMonsterDeath = (type) => {
+        this.monsterSystem.onMonsterDeath = (type, x, y) => {
             const xpValues: Record<string, number> = { spider: 20, ghost: 40, brute: 60 }
             const xp = xpValues[type] || 10
             this.player.addXp(xp)
             this.questSystem.updateProgress("kill", type, 1, this.player)
             this.hud.update(this.player, this.questSystem)
+
+            // Drop loot
+            const lootTable = LOOT_TABLES[type]
+            if (lootTable) {
+                lootTable.forEach(entry => {
+                    if (Math.random() < entry.chance) {
+                        const quantity = Phaser.Math.Between(entry.min, entry.max)
+                        // Drop in a random direction slightly away from center
+                        const angle = Math.random() * Math.PI * 2
+                        const dist = Math.random() * 30
+                        const dx = Math.cos(angle) * dist
+                        const dy = Math.sin(angle) * dist
+                        this.dropSystem.spawnDroppedItem(ITEMS[entry.itemId], quantity, x, y, x + dx, y + dy)
+                    }
+                })
+            }
         }
 
         this.combatSystem = new CombatSystem(this, this.monsterSystem)
@@ -169,10 +200,36 @@ export default class MainScene extends Phaser.Scene {
             this.nightSpawnController.onPhaseChange(phase)
         })
 
+        this.dropSystem = new DropSystem(this)
+        this.events.on('itemPickedUp', () => {
+            this.inventoryUI.refreshUI()
+            this.hud.update(this.player, this.questSystem)
+        })
 
+        this.events.on('itemDroppedOutside', (data: { item: any, quantity: number }) => {
+            const dropDistance = 40
+            const tx = this.player.sprite.x + this.player.facingDirection.x * dropDistance
+            const ty = this.player.sprite.y + this.player.facingDirection.y * dropDistance
+            this.dropSystem.spawnDroppedItem(data.item, data.quantity, this.player.sprite.x, this.player.sprite.y, tx, ty)
+        })
     }
 
     update() {
+        // Debug
+        // const fps = Math.round(this.game.loop.actualFps)
+        // const playerX = this.player.sprite.x.toFixed(1)
+        // const playerY = this.player.sprite.y.toFixed(1)
+        // const velocity = this.player.sprite.body?.velocity
+
+        // this.debugText.setText([
+        //     `FPS: ${fps}`,
+        //     `Player: (${playerX}, ${playerY})`,
+        //     `Velocity: (${velocity?.x.toFixed(1)}, ${velocity?.y.toFixed(1)})`,
+        //     `Monsters: ${this.monsterSystem.getMonsterGroup().getLength()}`,
+        //     `Objects: ${this.children.list.length}`,
+        // ])
+        // STOP HERE
+
         this.player.updateMovement(this.keys, PLAYER_SPEED)
         this.player.updateWeaponFollow()
         this.monsterSystem.update(this.player, (damage) => {
@@ -189,7 +246,10 @@ export default class MainScene extends Phaser.Scene {
 
         this.handleInteraction()
         this.handleCombat()
+        this.handleDrop()
         this.setupInventoryToggle()
+
+        this.dropSystem.update(this.player)
 
 
 
@@ -219,6 +279,7 @@ export default class MainScene extends Phaser.Scene {
         this.attackKey = this.input.keyboard!.addKey("SPACE")
         this.inventoryKey = this.input.keyboard!.addKey("I")
         this.debugTimeKey = this.input.keyboard!.addKey("T")
+        this.dropKey = this.input.keyboard!.addKey("Q")
     }
 
     private handleInteraction() {
@@ -309,5 +370,24 @@ export default class MainScene extends Phaser.Scene {
             text.destroy()
             this.scene.start("SecretLevelScene")
         })
+    }
+
+    private handleDrop() {
+        if (this.merchantSystem.isOpenNow() || this.craftingUI.isOpenNow() || this.questUI.isOpenNow() || this.inventoryUI.isOpenNow()) return
+        if (!Phaser.Input.Keyboard.JustDown(this.dropKey)) return
+
+        const selectedSlot = this.inventoryUI.getSelectedHotbarItem()
+        if (selectedSlot && selectedSlot.item) {
+            const itemToDrop = { ...selectedSlot.item }
+            if (this.player.inventory.removeItem(this.inventoryUI.getSelectedHotbarIndex(), 1)) {
+                const dropDistance = 40
+                const tx = this.player.sprite.x + this.player.facingDirection.x * dropDistance
+                const ty = this.player.sprite.y + this.player.facingDirection.y * dropDistance
+
+                this.dropSystem.spawnDroppedItem(itemToDrop, 1, this.player.sprite.x, this.player.sprite.y, tx, ty)
+                this.inventoryUI.refreshUI()
+                this.inventoryUI.selectHotbarSlot(this.inventoryUI.getSelectedHotbarIndex()) // Re-sync equipment
+            }
+        }
     }
 }

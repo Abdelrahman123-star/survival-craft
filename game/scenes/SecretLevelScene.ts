@@ -9,6 +9,7 @@ import { InventoryUI } from "../ui/InventoryUI"
 import { BuildingSystem } from "../systems/BuildingSystem"
 import { BossMonster } from "../entities/BossMonster"
 import { ITEMS } from "../config/items"
+import { DropSystem } from "../systems/DropSystem"
 
 type SpawnPoint = { x: number, y: number }
 type DoorTileRef = {
@@ -29,6 +30,8 @@ export default class SecretLevelScene extends Phaser.Scene {
   private keys!: Record<string, Phaser.Input.Keyboard.Key>
   private attackKey!: Phaser.Input.Keyboard.Key
   private inventoryKey!: Phaser.Input.Keyboard.Key
+  private dropKey!: Phaser.Input.Keyboard.Key
+  private dropSystem!: DropSystem
   private collisionLayers: Phaser.Tilemaps.TilemapLayer[] = []
   private allTileLayers: Phaser.Tilemaps.TilemapLayer[] = []
   private readonly mapScale = GRID_SIZE / 14
@@ -132,6 +135,18 @@ export default class SecretLevelScene extends Phaser.Scene {
     this.doorPair = this.findDoorPair(map)
     this.setupCamera(map)
     this.hud.update(this.player, this.questSystem)
+
+    this.dropSystem = new DropSystem(this)
+    this.events.on('itemPickedUp', () => {
+      this.inventoryUI.refreshUI()
+      this.hud.update(this.player, this.questSystem)
+    })
+    this.events.on('itemDroppedOutside', (data: { item: any, quantity: number }) => {
+      const dropDistance = 40
+      const tx = this.player.sprite.x + this.player.facingDirection.x * dropDistance
+      const ty = this.player.sprite.y + this.player.facingDirection.y * dropDistance
+      this.dropSystem.spawnDroppedItem(data.item, data.quantity, this.player.sprite.x, this.player.sprite.y, tx, ty)
+    })
   }
 
   update() {
@@ -143,9 +158,12 @@ export default class SecretLevelScene extends Phaser.Scene {
     this.buildingSystem.update(this.player, this.inventoryUI.getSelectedHotbarItem())
 
     this.handleCombat()
+    this.handleDrop()
     this.setupInventoryToggle()
     this.tryOpenDoor()
     this.tryEnterMainSceneDoor()
+
+    this.dropSystem.update(this.player)
   }
 
   private setupCamera(map: Phaser.Tilemaps.Tilemap) {
@@ -165,6 +183,7 @@ export default class SecretLevelScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>
     this.attackKey = this.input.keyboard!.addKey("SPACE")
     this.inventoryKey = this.input.keyboard!.addKey("I")
+    this.dropKey = this.input.keyboard!.addKey("Q")
   }
 
   private handleCombat() {
@@ -359,5 +378,24 @@ export default class SecretLevelScene extends Phaser.Scene {
 
     this.isTransitioningToMain = true
     this.scene.start("MainScene")
+  }
+
+  private handleDrop() {
+    if (this.inventoryUI.isOpenNow()) return
+    if (!Phaser.Input.Keyboard.JustDown(this.dropKey)) return
+
+    const selectedSlot = this.inventoryUI.getSelectedHotbarItem()
+    if (selectedSlot && selectedSlot.item) {
+      const itemToDrop = { ...selectedSlot.item }
+      if (this.player.inventory.removeItem(this.inventoryUI.getSelectedHotbarIndex(), 1)) {
+        const dropDistance = 40
+        const tx = this.player.sprite.x + this.player.facingDirection.x * dropDistance
+        const ty = this.player.sprite.y + this.player.facingDirection.y * dropDistance
+
+        this.dropSystem.spawnDroppedItem(itemToDrop, 1, this.player.sprite.x, this.player.sprite.y, tx, ty)
+        this.inventoryUI.refreshUI()
+        this.inventoryUI.selectHotbarSlot(this.inventoryUI.getSelectedHotbarIndex()) // Re-sync equipment
+      }
+    }
   }
 }

@@ -463,7 +463,10 @@ export class CraftingUI implements IUI {
       const qty = slot.getAt(2) as Phaser.GameObjects.Text
       const d = slots[i]
       if (d?.item) {
-        ic.setTexture(d.item.icon).setVisible(true)
+        const tex = this.scene.textures.get(d.item.icon)
+        const width = (tex.getSourceImage() as any).width || 16
+        const scale = width > 20 ? 1.1 : 2.2
+        ic.setTexture(d.item.icon).setScale(scale).setVisible(true)
         qty.setText(d.quantity > 1 ? String(d.quantity) : "").setVisible(d.quantity > 1)
       } else {
         ic.setVisible(false)
@@ -480,7 +483,11 @@ export class CraftingUI implements IUI {
       const qty = slot.getAt(2) as Phaser.GameObjects.Text
       const d = this.craftGrid[r]?.[c] ?? null
       if (d && ITEMS[d.itemId]) {
-        ic.setTexture(ITEMS[d.itemId].icon).setVisible(true)
+        const item = ITEMS[d.itemId]
+        const tex = this.scene.textures.get(item.icon)
+        const width = (tex.getSourceImage() as any).width || 16
+        const scale = width > 20 ? 1.1 : 2.2
+        ic.setTexture(item.icon).setScale(scale).setVisible(true)
         qty.setText(d.count > 1 ? String(d.count) : "").setVisible(d.count > 1)
       } else {
         ic.setVisible(false)
@@ -496,7 +503,11 @@ export class CraftingUI implements IUI {
     if (this.currentRecipe && ITEMS[this.currentRecipe.outputItemId]) {
       const maxTimes = this.craftingSystem.maxCraftCount(this.craftGrid, this.currentRecipe)
       const displayQty = this.currentRecipe.outputQty * maxTimes
-      ic.setTexture(ITEMS[this.currentRecipe.outputItemId].icon).setVisible(true)
+      const item = ITEMS[this.currentRecipe.outputItemId]
+      const tex = this.scene.textures.get(item.icon)
+      const width = (tex.getSourceImage() as any).width || 16
+      const scale = width > 20 ? 1.1 : 2.2
+      ic.setTexture(item.icon).setScale(scale).setVisible(true)
       qty.setText(displayQty > 1 ? String(displayQty) : "").setVisible(displayQty > 1)
     } else {
       ic.setVisible(false)
@@ -517,8 +528,13 @@ export class CraftingUI implements IUI {
   private syncDragIcon() {
     if (this.held && ITEMS[this.held.itemId]) {
       const p = this.scene.input.activePointer
+      const item = ITEMS[this.held.itemId]
+      const tex = this.scene.textures.get(item.icon)
+      const width = (tex.getSourceImage() as any).width || 16
+      const scale = width > 20 ? 1.1 : 2.2
       this.dragIcon
-        .setTexture(ITEMS[this.held.itemId].icon)
+        .setTexture(item.icon)
+        .setScale(scale)
         .setPosition(p.x, p.y)      // screen coords ← the fix
         .setVisible(true)
       this.dragQtyText

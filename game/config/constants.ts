@@ -9,7 +9,7 @@ export const PLAYER_HIT_COOLDOWN_MS = 0
 export const IDLE_ANIM_FRAME_RATE = 3
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 432000
+export const MONSTER_SPAWN_DELAY = 2000
 export const SPIDER_MAX_HP = 6
 export const SPIDER_SPEED = 140
 

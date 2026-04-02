@@ -209,5 +209,43 @@ export const ITEMS: Record<string, Item> = {
     properties: {
       value: 0
     }
+  },
+
+  // Loot Items
+  'spider-web': {
+    id: 'spider-web',
+    name: 'Spider Web',
+    description: 'Sticky and strong silk',
+    type: 'material',
+    icon: 'spider-web',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 3
+    }
+  },
+  'spider-eye': {
+    id: 'spider-eye',
+    name: 'Spider Eye',
+    description: 'A creepy, multifaceted eye',
+    type: 'material',
+    icon: 'spider-eye',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 5
+    }
+  },
+  'feather': {
+    id: 'feather',
+    name: 'Feather',
+    description: 'A soft, light feather',
+    type: 'material',
+    icon: 'feather',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 2
+    }
   }
 }
