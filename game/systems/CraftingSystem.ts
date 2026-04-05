@@ -34,6 +34,7 @@ export class CraftingSystem {
         ["wood-planks"],
       ],
     },
+    // Swords
     {
       id: "wooden_sword",
       outputItemId: "wooden-sword",
@@ -45,8 +46,39 @@ export class CraftingSystem {
       ],
     },
     {
-      id: "wooden_axe",
-      outputItemId: "wooden-axe",
+      id: "stoneSword",
+      outputItemId: "stoneSword",
+      outputQty: 1,
+      pattern: [
+        ["stone-block"],
+        ["stone-block"],
+        ["stick"],
+      ],
+    },
+    // Axes
+    {
+      id: "stoneAxe",
+      outputItemId: "stoneAxe",
+      outputQty: 1,
+      pattern: [
+        ["stone-block", "stone-block"],
+        ["stone-block", "stick"],
+        [null, "stick"],
+      ],
+    },
+    {
+      id: "ironAxe",
+      outputItemId: "ironAxe",
+      outputQty: 1,
+      pattern: [
+        ["iron-bar", "iron-bar"],
+        ["iron-bar", "stick"],
+        [null, "stick"],
+      ],
+    },
+    {
+      id: "woodenAxe",
+      outputItemId: "woodenAxe",
       outputQty: 1,
       pattern: [
         ["wood-planks", "wood-planks"],
@@ -54,9 +86,32 @@ export class CraftingSystem {
         [null, "stick"],
       ],
     },
+    // Pickaxes
     {
-      id: "wooden_pickaxe",
-      outputItemId: "wooden-pickaxe",
+      id: "stonePickaxe",
+      outputItemId: "stonePickaxe",
+      outputQty: 1,
+      pattern: [
+        ["stone-block", "stone-block", "stone-block"],
+        [null, "stick", null],
+        [null, "stick", null],
+      ],
+    },
+
+    {
+      id: "ironPickaxe",
+      outputItemId: "ironPickaxe",
+      outputQty: 1,
+      pattern: [
+        ["iron-bar", "iron-bar", "iron-bar"],
+        [null, "stick", null],
+        [null, "stick", null],
+      ],
+    },
+
+    {
+      id: "woodenPickaxe",
+      outputItemId: "woodenPickaxe",
       outputQty: 1,
       pattern: [
         ["wood-planks", "wood-planks", "wood-planks"],
@@ -64,17 +119,39 @@ export class CraftingSystem {
         [null, "stick", null],
       ],
     },
+
+
     {
       id: "wood_bow",
       outputItemId: "basic-bow",
       outputQty: 1,
       pattern: [
-        [null, "spider-web", "wood-planks"],
-        ["spider-web", null, "wood-planks"],
-        [null, "spider-web", "wood-planks"],
+        [null, "spider-web", "stick"],
+        ["spider-web", null, "stick"],
+        [null, "spider-web", "stick"],
+      ],
+    },
+    {
+      id: "hammer",
+      outputItemId: "hammer",
+      outputQty: 1,
+      pattern: [
+        ["stone-block", "stone-block", "stone-block"],
+        ["stone-block", "stone-block", "stone-block"],
+        [null, "stick", null],
+      ],
+    },
+    {
+      id: "crafting_table",
+      outputItemId: "crafting-table",
+      outputQty: 1,
+      pattern: [
+        ["wood-planks", "wood-planks"],
+        ["wood-planks", "wood-planks"],
       ],
     },
   ]
+
 
   // ── Public ──────────────────────────────────────────────────────────────────
 

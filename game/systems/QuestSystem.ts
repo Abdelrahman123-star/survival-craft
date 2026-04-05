@@ -13,64 +13,49 @@ export interface Quest {
     status: 'available' | 'active' | 'completed' | 'claimed'
 }
 
+import { Random } from "../utils/Random"
+
 export class QuestSystem {
     private allQuests: Quest[] = []
     private scene: Phaser.Scene
+    private seed: string
     private onQuestCompleted?: (quest: Quest) => void
 
-    constructor(scene: Phaser.Scene) {
+    constructor(scene: Phaser.Scene, seed: string) {
         this.scene = scene
+        this.seed = seed
         this.generateInitialQuests()
     }
 
     private generateInitialQuests() {
-        // These will be "available" quests offered by villagers
-        this.allQuests.push({
-            id: "wood-quest",
-            villagerId: "worker",
-            description: "Collect 10 Wood",
-            targetCount: 10,
-            currentCount: 0,
-            xpReward: 50,
-            type: "collect",
-            targetType: "wood",
-            status: 'available'
-        })
+        const rand = new Random(this.seed + "_quests")
+        const questCounts = 4 // Number of initial quests
 
-        this.allQuests.push({
-            id: "kill-quest",
-            villagerId: "smith",
-            description: "Kill 5 Spiders",
-            targetCount: 5,
-            currentCount: 0,
-            xpReward: 60,
-            type: "kill",
-            targetType: "spider",
-            status: 'available'
-        })
+        // Use a list of possible quests to pick from deterministically
+        const possibleQuests = [
+            { id: "wood-quest", type: "collect", targetType: "wood", desc: "Collect 10 Wood", target: 10, xp: 50 },
+            { id: "kill-quest", type: "kill", targetType: "spider", desc: "Kill 5 Spiders", target: 5, xp: 60 },
+            { id: "chop-quest", type: "chop", desc: "Chop 15 Trees", target: 15, xp: 100 },
+            { id: "ghost-quest", type: "kill", targetType: "ghost", desc: "Kill 3 Ghosts", target: 3, xp: 120 }
+        ]
 
-        this.allQuests.push({
-            id: "chop-quest-lady",
-            villagerId: "OldLady",
-            description: "Chop 15 Trees",
-            targetCount: 15,
-            currentCount: 0,
-            xpReward: 100,
-            type: "chop",
-            status: 'available'
-        })
+        // Link quests to specific villager IDs
+        const villagerIds = ["villager_0", "villager_1", "villager_2", "villager_3"]
 
-        this.allQuests.push({
-            id: "kill-quest-young",
-            villagerId: "YoungLady",
-            description: "Kill 3 Ghosts",
-            targetCount: 3,
-            currentCount: 0,
-            xpReward: 120,
-            type: "kill",
-            targetType: "ghost",
-            status: 'available'
-        })
+        for (let i = 0; i < questCounts; i++) {
+            const qCfg = possibleQuests[i % possibleQuests.length]
+            this.allQuests.push({
+                id: `${qCfg.id}_${i}`,
+                villagerId: villagerIds[i],
+                description: qCfg.desc,
+                targetCount: qCfg.target,
+                currentCount: 0,
+                xpReward: qCfg.xp,
+                type: qCfg.type as any,
+                targetType: qCfg.targetType,
+                status: 'available'
+            })
+        }
     }
 
     public updateProgress(type: "kill" | "chop" | "collect", targetType?: string, amount: number = 1, player?: Player) {
@@ -139,5 +124,15 @@ export class QuestSystem {
 
     public setOnQuestCompleted(callback: (quest: Quest) => void) {
         this.onQuestCompleted = callback
+    }
+
+    public completeAllQuests() {
+        this.allQuests.forEach(quest => {
+            if (quest.status === 'available' || quest.status === 'active') {
+                quest.currentCount = quest.targetCount
+                quest.status = 'completed'
+                this.showQuestCompleteNotification(quest)
+            }
+        })
     }
 }

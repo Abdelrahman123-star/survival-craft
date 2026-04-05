@@ -1,7 +1,7 @@
 // World
 export const WORLD_SIZE = 1500
 export const GRID_SIZE = 48
-export const PLAYER_SPEED = 200
+export const PLAYER_SPEED = 300
 export const PLAYER_MAX_HP = 20
 export const PLAYER_ATTACK_RANGE = 90
 export const PLAYER_ATTACK_COOLDOWN_MS = 260
@@ -9,7 +9,7 @@ export const PLAYER_HIT_COOLDOWN_MS = 0
 export const IDLE_ANIM_FRAME_RATE = 3
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 2000
+export const MONSTER_SPAWN_DELAY = 20000
 export const SPIDER_MAX_HP = 6
 export const SPIDER_SPEED = 140
 
@@ -39,6 +39,14 @@ export const BOSS_ATTACK_COOLDOWN = 1000
 // Trees
 export const TREE_COUNT = 50
 export const TREE_INTERACT_RADIUS = 80
+export const TREE_MAX_HP = 10
+export const HAND_CHOPPING_POWER = 1
+export const HAND_DAMAGE = 1
+export const HAND_MINING_POWER = 1
+
+// Rocks
+export const ROCK_MAX_HP = 15
+export const ROCK_INTERACT_RADIUS = 100
 
 // Merchant
 export const MERCHANT_INTERACT_RADIUS = 70
@@ -64,6 +72,7 @@ export const SHOP_ITEMS = [
 ]
 
 // World Gen
+export const WORLD_SEED = "test"
 export const GROUND_TILES = ["ground", "ground", "ground", "ground", "grass", "grass", "flower-grass"]
 
 

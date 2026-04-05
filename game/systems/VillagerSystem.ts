@@ -4,12 +4,7 @@ import { QuestSystem, Quest } from "./QuestSystem"
 import { QuestUI } from "../ui/QuestUI"
 import { Player } from "../entities/Player"
 
-export const VILLAGER_CONFIG = [
-    { id: 'worker', name: 'Worker', texture: 'villager-worker', x: 950, y: 750 },
-    { id: 'smith', name: 'Blacksmith', texture: 'villager-smith', x: 1000, y: 1050 },
-    { id: 'OldLady', name: 'Old Lady', texture: 'villager-oldlady', x: 600, y: 650 },
-    { id: 'YoungLady', name: 'Young Lady', texture: 'villager-younglady', x: 1000, y: 650 }
-]
+import { Random } from "../utils/Random"
 
 export class VillagerSystem {
     private scene: Phaser.Scene
@@ -17,18 +12,36 @@ export class VillagerSystem {
     private questSystem: QuestSystem
     private villagerGroup: Phaser.Physics.Arcade.Group
     private questUI: QuestUI
+    private seed: string
+    private villagePos: { x: number, y: number }
 
-    constructor(scene: Phaser.Scene, questSystem: QuestSystem, questUI: QuestUI) {
+    constructor(scene: Phaser.Scene, questSystem: QuestSystem, questUI: QuestUI, seed: string, villagePos: { x: number, y: number }) {
         this.scene = scene
         this.questSystem = questSystem
         this.questUI = questUI
+        this.seed = seed
+        this.villagePos = villagePos
         this.villagerGroup = scene.physics.add.group()
         this.spawnVillagers()
     }
 
     private spawnVillagers() {
-        VILLAGER_CONFIG.forEach(cfg => {
-            const v = new Villager(this.scene, cfg.x, cfg.y, cfg.id, cfg.name, cfg.texture)
+        const rand = new Random(this.seed + "_villagers")
+        const configs = [
+            { id: 'villager_0', name: 'Worker', texture: 'villager-worker' },
+            { id: 'villager_1', name: 'Blacksmith', texture: 'villager-smith' },
+            { id: 'villager_2', name: 'Old Lady', texture: 'villager-oldlady' },
+            { id: 'villager_3', name: 'Young Lady', texture: 'villager-younglady' }
+        ]
+
+        configs.forEach((cfg, i) => {
+            // Deterministic offsets around center
+            const angle = (i / configs.length) * Math.PI * 2
+            const dist = 100 + rand.nextInt(0, 50)
+            const vx = this.villagePos.x + Math.cos(angle) * dist
+            const vy = this.villagePos.y + Math.sin(angle) * dist
+
+            const v = new Villager(this.scene, vx, vy, cfg.id, cfg.name, cfg.texture)
             this.villagers.push(v)
             this.villagerGroup.add(v.sprite)
         })

@@ -5,30 +5,32 @@ import { HUD } from "../ui/HUD"
 import { QuestSystem } from "../systems/QuestSystem"
 import { CombatSystem } from "../systems/CombatSystem"
 import { MonsterSystem } from "../systems/MonsterSystem"
-import { PLAYER_SPEED, WORLD_SIZE } from "../config/constants"
+import { MiningSystem } from "../systems/MiningSystem"
+import { PLAYER_SPEED, WORLD_SIZE, GRID_SIZE } from "../config/constants"
 import { ITEMS } from "../config/items"
 import { LOOT_TABLES } from "../config/loot"
 import { InventoryUI } from "../ui/InventoryUI"
 import { MerchantSystem } from "../systems/MerchantSystem"
 import { CraftingSystem } from "../systems/CraftingSystem"
 import { CraftingUI } from "../ui/CraftingUI"
-import { CraftingTable } from "../entities/CraftingTable"
+
 import { BuildingSystem } from "../systems/BuildingSystem"
 import { MapSystem } from "../systems/MapSystem"
 import { VillagerSystem } from "../systems/VillagerSystem"
 import { QuestUI } from "../ui/QuestUI"
 import { Player } from "../entities/Player"
 
-
 import { DayNightSystem } from "../systems/Daynightsystem"
 import { WorldOverlay } from "../systems/WorldOverlay"
 import { DayNightHUD } from "../ui/DayNightHUD"
 import { NightSpawnController } from "../systems/NightSpawnController"
 import { DropSystem } from "../systems/DropSystem"
-
+import { HAND_CHOPPING_POWER, HAND_MINING_POWER } from "../config/constants"
+import { DebugSystem } from "../systems/DebugSystem"
 
 export default class MainScene extends Phaser.Scene {
     private treeSystem!: TreeSystem
+    private miningSystem!: MiningSystem
     private hud!: HUD
     private inventoryUI!: InventoryUI
     private questSystem!: QuestSystem
@@ -37,7 +39,7 @@ export default class MainScene extends Phaser.Scene {
     private merchantSystem!: MerchantSystem
     private craftingSystem!: CraftingSystem
     private craftingUI!: CraftingUI
-    private craftingTable!: CraftingTable
+
     private buildingSystem!: BuildingSystem
     private mapSystem!: MapSystem
     private villagerSystem!: VillagerSystem
@@ -57,11 +59,10 @@ export default class MainScene extends Phaser.Scene {
     private worldOverlay!: WorldOverlay
     private dayNightHUD!: DayNightHUD
     private nightSpawnController!: NightSpawnController
-    private debugTimeKey!: Phaser.Input.Keyboard.Key
     private dropSystem!: DropSystem
     private dropKey!: Phaser.Input.Keyboard.Key
+    private debugSystem!: DebugSystem
 
-    private debugText!: Phaser.GameObjects.Text
     constructor() { super("MainScene") }
 
     preload() {
@@ -72,21 +73,54 @@ export default class MainScene extends Phaser.Scene {
             "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
             tree_bottom: "/assets/tree.png",
             spider: "/assets/spider.png", merchant: "/assets/merchant.png",
-            "wood-sword": "/assets/wood-sword.png", axe: "/assets/axe.png",
-            pickaxe: "/assets/pickaxe.png", bow: "/assets/bow.png",
+
+            "woodenSword": "/assets/tools/woodenSword.png",
+            "stoneSword": "/assets/tools/stoneSword.png",
+            "ironSword": "/assets/tools/ironSword.png",
+
+            "woodenAxe": "/assets/tools/woodenAxe.png",
+            "stoneAxe": "/assets/tools/stoneAxe.png",
+            "ironAxe": "/assets/tools/ironAxe.png",
+
+            "woodenPickaxe": "/assets/tools/woodenPickaxe.png",
+            "stonePickaxe": "/assets/tools/stonePickaxe.png",
+            "ironPickaxe": "/assets/tools/ironPickaxe.png",
+
+            bow: "/assets/bow.png",
             ghost: "/assets/ghost.png", "wood-planks": "/assets/wood-planks.jpg",
             stick: "/assets/stick.png", "crafting-table": "/assets/crafting-table.png",
             hammer: "/assets/hammer.png", brute: "/assets/spider.png",
-            "villager-worker": "/assets/villigers/worker.png",
-            "villager-smith": "/assets/villigers/WorkSmith.png",
-            "villager-oldlady": "/assets/villigers/OldLady.png",
-            "villager-younglady": "/assets/villigers/YoungLady.png",
-            "quest-available": "/assets/interface/Questavailable.png",
-            "quest-active": "/assets/interface/Questactive.png",
-            villager: "/assets/villiger.png",
-            "spider-web": "/assets/loot/spider_web.png",
-            "spider-eye": "/assets/loot/spider_eye.png",
+
             feather: "/assets/loot/feather.png",
+            "spider-eye": "/assets/loot/spider_eye.png",
+            "spider-web": "/assets/loot/spider_web.png",
+            "stone-block": "/assets/stone-block.png",
+
+            // GrassBiom assets
+            grass1: "/assets/Bioms/grass1.png",
+            grass2: "/assets/Bioms/grass2.png",
+            mushroom: "/assets/Bioms/mushroom.png",
+            flowergrass: "/assets/Bioms/flowergrass.png",
+            smallflowers: "/assets/Bioms/smallflowers.png",
+
+            tree_green_top: "/assets/Bioms/TopGreenTree.png",
+            tree_green_bottom: "/assets/Bioms/BottomGreenTree.png",
+            tree_orange_top: "/assets/Bioms/TopOrangeTree.png",
+            tree_orange_bottom: "/assets/Bioms/BottomOrangeTree.png",
+
+            // DesertBiom assets
+            cactus_big: "/assets/Bioms/cactus_big.png",
+            cactus_small: "/assets/Bioms/cactus_small.png",
+            desert_grass: "/assets/Bioms/desert_grass.png",
+            sand: "/assets/Bioms/sand.png",
+            sand2: "/assets/Bioms/sand2.png",
+            rock1: "/assets/Rocks/rock1.png",
+            rock2: "/assets/Rocks/rock2.png",
+            rock3: "/assets/Rocks/rock3.png",
+            rock4: "/assets/Rocks/rock4.png",
+            rock5: "/assets/Rocks/rock5.png",
+            "tileset-atlas": "/assets/tileset.png",
+
         }
         Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
         this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
@@ -97,41 +131,45 @@ export default class MainScene extends Phaser.Scene {
     }
 
     create() {
-        // Debugging
-        // this.debugText = this.add.text(10, 10, '', {
-        //     fontSize: '14px',
-        //     color: '#00ff00',
-        //     backgroundColor: '#00000088',
-        //     padding: { x: 5, y: 5 }
-        // }).setScrollFactor(0).setDepth(999)        // stop here
         window.addEventListener("contextmenu", (e) => e.preventDefault())
         this.game.canvas.oncontextmenu = () => false
         this.setupControls()
-        this.mapSystem = new MapSystem(this)
-        this.player = new Player(this, 750, 750)
-
-        this.villager = this.physics.add.sprite(this.villagerSpawn.x, this.villagerSpawn.y, "villager").setScale(3).setDepth(1)
-        this.villager.setImmovable(true)
-
-        this.setupCamera()
         this.treeSystem = new TreeSystem(this)
+        this.miningSystem = new MiningSystem(this)
+        this.mapSystem = new MapSystem(this)
 
-        // Add village trees
-        const centerX = WORLD_SIZE / 2
-        const centerY = WORLD_SIZE / 2
-        this.treeSystem.createTree(centerX - 64, centerY - 96, "green")
-        this.treeSystem.createTree(centerX + 32, centerY - 96, "orange")
+        const chunkLoadedListener = (data: any) => {
+            this.treeSystem.onChunkLoaded(data)
+            this.miningSystem.onChunkLoaded(data)
+        }
+        const chunkUnloadedListener = (key: string) => {
+            this.treeSystem.onChunkUnloaded(key)
+            this.miningSystem.onChunkUnloaded(key)
+        }
 
+        this.events.on('chunkLoaded', chunkLoadedListener)
+        this.events.on('chunkUnloaded', chunkUnloadedListener)
+        this.events.once('shutdown', () => {
+            this.events.off('chunkLoaded', chunkLoadedListener)
+            this.events.off('chunkUnloaded', chunkUnloadedListener)
+        })
+
+        const villagePos = this.mapGenVillagePos()
+        this.player = new Player(this, villagePos.x, villagePos.y)
+        this.setupCamera()
+        // Register initial colliders
+        this.mapSystem.addCollider(this.player.sprite)
+        this.physics.add.collider(this.player.sprite, this.miningSystem.getRocksGroup())
+        // this.mapSystem.addCollider(this.villager)
         this.monsterSystem = new MonsterSystem(this)
-        this.questSystem = new QuestSystem(this)
-
+        // this.questSystem = new QuestSystem(this, WORLD_SEED)
         this.monsterSystem.onMonsterDeath = (type, x, y) => {
             const xpValues: Record<string, number> = { spider: 20, ghost: 40, brute: 60 }
             const xp = xpValues[type] || 10
             this.player.addXp(xp)
-            this.questSystem.updateProgress("kill", type, 1, this.player)
-            this.hud.update(this.player, this.questSystem)
-
+            // this.questSystem.updateProgress("kill", type, 1, this.player)
+            // this.hud.update(this.player, this.questSystem)
+            this.hud.update(this.player, undefined as any)
             // Drop loot
             const lootTable = LOOT_TABLES[type]
             if (lootTable) {
@@ -148,31 +186,31 @@ export default class MainScene extends Phaser.Scene {
                 })
             }
         }
-
         this.combatSystem = new CombatSystem(this, this.monsterSystem)
         this.hud = new HUD(this)
         this.uiManager = new UIManager()
         this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
-        this.merchantSystem = new MerchantSystem(this, 750, 600, this.player, this.inventoryUI)
+        const vPos = this.mapGenVillagePos()
+        // this.merchantSystem = new MerchantSystem(this, vPos.x, vPos.y - 150, this.player, this.inventoryUI)
         this.craftingSystem = new CraftingSystem()
         this.craftingUI = new CraftingUI(this)
 
         this.uiManager.registerUI("inventory", this.inventoryUI)
         this.uiManager.registerUI("crafting", this.craftingUI)
 
-        this.craftingTable = new CraftingTable(this, 850, 750)
+
         this.buildingSystem = new BuildingSystem(this)
-
-        // Quest UI and Villager System
+        // Quest UI and Villager System (Commented out)
+        /*
         this.questUI = new QuestUI(this)
-        this.villagerSystem = new VillagerSystem(this, this.questSystem, this.questUI)
+        this.villagerSystem = new VillagerSystem(this, this.questSystem, this.questUI, WORLD_SEED, vPos)
         this.uiManager.registerUI("quest", this.questUI)
+        this.mapSystem.addCollider(this.villagerSystem.getVillagerGroup())
+        this.physics.add.collider(this.villager, this.villagerSystem.getVillagerGroup())
+        */
+        // Add colliders for monsters
+        this.mapSystem.addCollider(this.monsterSystem.getMonsterGroup())
 
-        this.physics.add.collider(this.villager, this.mapSystem.getObstacleLayer())
-
-
-        this.physics.add.collider(this.player.sprite, this.mapSystem.getObstacleLayer())
-        this.physics.add.collider(this.villagerSystem.getVillagerGroup(), this.mapSystem.getObstacleLayer())
         this.physics.add.collider(this.player.sprite, this.buildingSystem.getBlocksGroup())
         this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.buildingSystem.getBlocksGroup(), (m, b) => {
             const monster = this.monsterSystem.getMonsterAt(m as Phaser.Physics.Arcade.Sprite)
@@ -182,11 +220,8 @@ export default class MainScene extends Phaser.Scene {
         })
 
         this.physics.add.overlap(this.player.sprite, this.monsterSystem.getMonsterGroup(), (p, m) => {
-            // Collision is now mostly for physical blocking or potential knockback, 
-            // damage is handled by the monster's attack windup in update()
+            // Collision is now handled by the monster's attack windup in update()
         })
-
-        this.physics.add.collider(this.monsterSystem.getMonsterGroup(), this.mapSystem.getObstacleLayer())
 
 
         this.dayNightSystem = new DayNightSystem(this)
@@ -212,23 +247,82 @@ export default class MainScene extends Phaser.Scene {
             const ty = this.player.sprite.y + this.player.facingDirection.y * dropDistance
             this.dropSystem.spawnDroppedItem(data.item, data.quantity, this.player.sprite.x, this.player.sprite.y, tx, ty)
         })
+
+        this.setupDebugSystem()
+    }
+
+    private setupDebugSystem() {
+        this.debugSystem = new DebugSystem(this)
+
+        this.events.on('debugGiveItem', (data: { itemId: string, quantity: number }) => {
+            if (ITEMS[data.itemId]) {
+                this.player.inventory.addItem(ITEMS[data.itemId], data.quantity)
+                this.inventoryUI.refreshUI()
+            }
+        })
+
+        this.events.on('debugSetTime', (time: number) => {
+            this.dayNightSystem.setCycleProgress(time)
+        })
+
+        this.events.on('debugSpawnMonster', (data: { type: string, x?: number, y?: number }) => {
+            this.monsterSystem.spawnMonster(data.type as any, data.x, data.y)
+        })
+
+        this.events.on('debugCompleteAllQuests', () => {
+            if (this.questSystem) {
+                this.questSystem.completeAllQuests()
+            }
+        })
+
+        this.events.on('debugGetPlayerState', () => {
+            console.log("Player State:", {
+                hp: this.player.hp,
+                maxHp: this.player.maxHp,
+                level: this.player.level,
+                xp: this.player.xp,
+                pos: { x: this.player.sprite.x, y: this.player.sprite.y }
+            })
+        })
+
+        this.events.on('debugTeleportTo', (data: { x: number, y: number }) => {
+            this.player.sprite.setPosition(data.x, data.y)
+        })
+
+        this.events.on('debugGodMode', (enabled: boolean) => {
+            this.combatSystem.setGodMode(enabled)
+        })
+
+        this.events.on('debugUnlimitedResources', (enabled: boolean) => {
+            // This is a flag that can be checked by other systems if needed
+            console.log(`Unlimited Resources: ${enabled}`)
+        })
+
+        this.events.on('debugToggleCollisionBoxes', (show: boolean) => {
+            this.physics.world.drawDebug = show
+            if (show) {
+                this.physics.world.createDebugGraphic()
+            } else {
+                this.physics.world.debugGraphic?.clear()
+            }
+        })
+
+        this.events.on('debugDisableDayNight', (disabled: boolean) => {
+            // Handled by DayNightSystem update skip if needed, 
+            // but for now we just log it or set a flag
+            console.log(`Day/Night Disabled: ${disabled}`)
+        })
+
+        this.events.on('debugRefreshUI', () => {
+            this.inventoryUI.refreshUI()
+            this.hud.update(this.player, this.questSystem)
+        })
     }
 
     update() {
-        // Debug
-        // const fps = Math.round(this.game.loop.actualFps)
-        // const playerX = this.player.sprite.x.toFixed(1)
-        // const playerY = this.player.sprite.y.toFixed(1)
-        // const velocity = this.player.sprite.body?.velocity
 
-        // this.debugText.setText([
-        //     `FPS: ${fps}`,
-        //     `Player: (${playerX}, ${playerY})`,
-        //     `Velocity: (${velocity?.x.toFixed(1)}, ${velocity?.y.toFixed(1)})`,
-        //     `Monsters: ${this.monsterSystem.getMonsterGroup().getLength()}`,
-        //     `Objects: ${this.children.list.length}`,
-        // ])
-        // STOP HERE
+
+        this.mapSystem.update(this.player.sprite.x, this.player.sprite.y)
 
         this.player.updateMovement(this.keys, PLAYER_SPEED)
         this.player.updateWeaponFollow()
@@ -238,11 +332,13 @@ export default class MainScene extends Phaser.Scene {
                 this.player.playDeathAnimation(() => this.scene.restart())
             }
         })
-        this.hud.update(this.player, this.questSystem)
+        // this.hud.update(this.player, this.questSystem)
+        this.hud.update(this.player, undefined as any)
+
         this.uiManager.update()
-        this.merchantSystem.update()
+        // this.merchantSystem.update()
         this.buildingSystem.update(this.player, this.inventoryUI.getSelectedHotbarItem())
-        this.villagerSystem.update()
+        // this.villagerSystem.update()
 
         this.handleInteraction()
         this.handleCombat()
@@ -251,41 +347,28 @@ export default class MainScene extends Phaser.Scene {
 
         this.dropSystem.update(this.player)
 
-
-
         const dayNightState = this.dayNightSystem.update(this.game.loop.delta)
         this.worldOverlay.update(dayNightState, this.game.loop.delta)
         this.dayNightHUD.update(dayNightState)
 
-
-        // Hold T to fast-forward time (debug only)
-        if (this.debugTimeKey.isDown) {
-            this.dayNightSystem.fastForward(0.005) // tweak this speed
-        }
-
-
-
+        this.debugSystem.update(this.player, this.dayNightSystem, this.monsterSystem)
     }
-
     private setupCamera() {
         this.cameras.main.startFollow(this.player.sprite)
-        this.physics.world.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE)
-        this.cameras.main.setBounds(0, 0, WORLD_SIZE, WORLD_SIZE)
+        // Removed bounds to allow infinite exploration
     }
-
     private setupControls() {
         this.keys = this.input.keyboard!.addKeys({ up: "W", down: "S", left: "A", right: "D" }) as any
         this.interactKey = this.input.keyboard!.addKey("E")
         this.attackKey = this.input.keyboard!.addKey("SPACE")
         this.inventoryKey = this.input.keyboard!.addKey("I")
-        this.debugTimeKey = this.input.keyboard!.addKey("T")
         this.dropKey = this.input.keyboard!.addKey("Q")
     }
-
     private handleInteraction() {
-        if (this.questUI.isOpenNow()) return
+        // if (this.questUI.isOpenNow()) return
         if (!Phaser.Input.Keyboard.JustDown(this.interactKey)) return
 
+        /*
         const distanceToVillager = Phaser.Math.Distance.Between(
             this.player.sprite.x,
             this.player.sprite.y,
@@ -296,55 +379,85 @@ export default class MainScene extends Phaser.Scene {
             this.startBossTeleportDialogue()
             return
         }
-
+    
         // Prioritize Villager Interaction
         if (this.villagerSystem.handleInteraction(this.player)) {
             return
         }
-
+    
         if (this.merchantSystem.isPlayerInRange(this.player.sprite.x, this.player.sprite.y)) {
             this.merchantSystem.toggle(this.player)
             return
         }
+        */
+        let foundTable = false
+        this.buildingSystem.getBlocksGroup().getChildren().forEach((block: any) => {
+            if (block.getData("itemId") === "crafting-table") {
+                const dx = this.player.sprite.x - block.x
+                const dy = this.player.sprite.y - block.y
+                if (Math.sqrt(dx * dx + dy * dy) < 80) {
+                    foundTable = true
+                }
+            }
+        })
 
-        const dx = this.player.sprite.x - this.craftingTable.sprite.x, dy = this.player.sprite.y - this.craftingTable.sprite.y
-        if (Math.sqrt(dx * dx + dy * dy) < 80) {
+        if (foundTable) {
             if (this.craftingUI.isOpenNow()) this.craftingUI.hide()
             else {
                 this.craftingUI.show(this.player, this.craftingSystem)
             }
             return
         }
-
         const nearbyTree = this.treeSystem.getNearbyTree(this.player.sprite.x, this.player.sprite.y)
-        if (nearbyTree && !this.merchantSystem.isOpenNow() && !this.craftingUI.isOpenNow()) {
-            this.treeSystem.chopTree(nearbyTree)
-            this.player.inventory.addItem(ITEMS["wood"], 1)
-            this.player.playChoppingAnimation()
+        if (nearbyTree && /*!this.merchantSystem.isOpenNow() &&*/ !this.craftingUI.isOpenNow()) {
+            const equipped = this.inventoryUI.getSelectedHotbarItem()
+            const isAxe = equipped?.item?.id.toLowerCase().includes('axe')
+            const power = equipped?.item?.properties?.choppingPower ?? HAND_CHOPPING_POWER
 
-            // Grant XP and update quest
-            this.player.addXp(10)
-            this.questSystem.updateProgress("chop", undefined, 1, this.player)
+            const destroyed = this.treeSystem.chopTree(nearbyTree, power)
+            this.player.playChoppingAnimation(!!isAxe)
 
-            this.inventoryUI.refreshUI()
-            this.hud.update(this.player, this.questSystem)
+            if (destroyed) {
+                this.player.inventory.addItem(ITEMS["wood"], 1)
+                this.player.addXp(10)
+                this.inventoryUI.refreshUI()
+                this.hud.update(this.player, undefined as any)
+            }
+            return
+        }
+
+        const nearbyRock = this.miningSystem.getNearbyRock(this.player.sprite.x, this.player.sprite.y)
+        if (nearbyRock && !this.craftingUI.isOpenNow()) {
+            const equipped = this.inventoryUI.getSelectedHotbarItem()
+            const isPickaxe = equipped?.item?.id.toLowerCase().includes('pickaxe')
+            const power = equipped?.item?.properties?.miningPower ?? HAND_MINING_POWER
+
+            const destroyed = this.miningSystem.mineRock(nearbyRock, power)
+            // Reuse chopping animation for now, or use a similar logic
+            this.player.playChoppingAnimation(!!isPickaxe)
+
+            if (destroyed) {
+                this.player.inventory.addItem(ITEMS["stone-block"], 1)
+                this.player.addXp(15)
+                this.inventoryUI.refreshUI()
+                this.hud.update(this.player, undefined as any)
+            }
+            return
         }
     }
-
     private handleCombat() {
-        if (this.merchantSystem.isOpenNow() || this.craftingUI.isOpenNow() || this.questUI.isOpenNow()) return
+        if (/*this.merchantSystem.isOpenNow() ||*/ this.craftingUI.isOpenNow() /*|| this.questUI.isOpenNow()*/) return
         if (!Phaser.Input.Keyboard.JustDown(this.attackKey)) return
         const equipped = this.inventoryUI.getSelectedHotbarItem()
 
-        if (equipped?.item?.id === "wood-planks") {
+        if (equipped?.item?.id === "wood-planks" || equipped?.item?.id === "crafting-table") {
             this.buildingSystem.placeBlock(this.player, equipped, this.inventoryUI)
         } else {
             this.combatSystem.handlePlayerAttack(this.player, equipped, this.time.now)
         }
     }
-
     private setupInventoryToggle() {
-        if (Phaser.Input.Keyboard.JustDown(this.inventoryKey) && !this.merchantSystem.isOpenNow() && !this.questUI.isOpenNow()) {
+        if (Phaser.Input.Keyboard.JustDown(this.inventoryKey) && /*!this.merchantSystem.isOpenNow() &&*/ !this.inventoryUI.isOpenNow()) {
             this.inventoryUI.toggle()
         }
     }
@@ -371,9 +484,8 @@ export default class MainScene extends Phaser.Scene {
             this.scene.start("SecretLevelScene")
         })
     }
-
     private handleDrop() {
-        if (this.merchantSystem.isOpenNow() || this.craftingUI.isOpenNow() || this.questUI.isOpenNow() || this.inventoryUI.isOpenNow()) return
+        if (/*this.merchantSystem.isOpenNow() ||*/ this.craftingUI.isOpenNow() /*|| this.questUI.isOpenNow()*/ || this.inventoryUI.isOpenNow()) return
         if (!Phaser.Input.Keyboard.JustDown(this.dropKey)) return
 
         const selectedSlot = this.inventoryUI.getSelectedHotbarItem()
@@ -389,5 +501,11 @@ export default class MainScene extends Phaser.Scene {
                 this.inventoryUI.selectHotbarSlot(this.inventoryUI.getSelectedHotbarIndex()) // Re-sync equipment
             }
         }
+    }
+    private mapGenVillagePos(): { x: number, y: number } {
+        const width = Math.ceil(WORLD_SIZE / GRID_SIZE)
+        const height = Math.ceil(WORLD_SIZE / GRID_SIZE)
+        const { x, y } = (this.mapSystem as any).worldGen.getVillagePosition(width, height)
+        return { x: x * GRID_SIZE, y: y * GRID_SIZE }
     }
 }

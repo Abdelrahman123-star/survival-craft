@@ -66,8 +66,8 @@ export class Player {
       }
     })
 
-    this.weaponSprite = scene.add.image(x + 18, y + 4, "wood-sword")
-      .setScale(2.1).setDepth(2).setVisible(false).setOrigin(0.2, 0.8)
+    this.weaponSprite = scene.add.image(x + 18, y + 4, "woodenSword")
+      .setScale(1.2).setDepth(2).setVisible(false).setOrigin(0.1, 0.9)
 
     // Ensure snappy movement and correct body size
     if (this.sprite.body) {
@@ -81,8 +81,15 @@ export class Player {
     }
 
     // Start with a sword and a hammer
-    this.inventory.addItem(ITEMS["wooden-sword"], 1)
-    this.inventory.addItem(ITEMS["hammer"], 1)
+    // this.inventory.addItem(ITEMS["wooden-sword"], 1)
+    // this.inventory.addItem(ITEMS["woodenSword"], 1)
+    // this.inventory.addItem(ITEMS["stoneSword"], 1)
+    // this.inventory.addItem(ITEMS["ironSword"], 1)
+    // this.inventory.addItem(ITEMS["stone-block"], 40)
+    // this.inventory.addItem(ITEMS["woodenPickaxe"], 1)
+    this.inventory.addItem(ITEMS["stoneAxe"], 1)
+    // this.inventory.addItem(ITEMS["woodenAxe"], 1)
+    // this.inventory.addItem(ITEMS["ironAxe"], 1)
   }
 
   setMovementEnabled(enabled: boolean) {
@@ -131,24 +138,36 @@ export class Player {
 
   updateWeaponFollow() {
     if (!this.weaponSprite.visible) return
-    const vx = this.sprite.body ? (this.sprite.body as Phaser.Physics.Arcade.Body).velocity.x : 0
-    const facingRight = vx >= 0
-    this.weaponSprite.setPosition(this.sprite.x + (facingRight ? 18 : -18), this.sprite.y + 6)
+    const facingRight = this.facingDirection.x >= 0
+    const idleOffset = 4
+
+    // Position weapon relatively to the character's hands
+    const offsetX = facingRight ? 15 : -15
+    const offsetY = 8 + (Math.sin(this.sprite.scene.time.now / 200) * 2) // Slight bobbing
+
+    this.weaponSprite.setPosition(this.sprite.x + offsetX, this.sprite.y + offsetY)
     this.weaponSprite.setFlipX(!facingRight)
+
+    // Adjust rotation for "resting" state
+    if (!this.sprite.scene.tweens.isTweening(this.weaponSprite)) {
+      this.weaponSprite.setRotation(facingRight ? 0.3 : -0.3)
+    }
   }
 
   updateWeaponVisual() {
     const show = !!this.equippedItemId
     if (show && this.equippedItemId) {
-      const icon = ITEMS[this.equippedItemId]?.icon ?? "wood-sword"
+      const icon = ITEMS[this.equippedItemId]?.icon ?? "woodenSword"
       this.weaponSprite.setTexture(icon)
 
-      // Dynamic scaling for held items to support both 16x16 and 32x32 icons
+      // Dynamic scaling: smaller for 32x32 icons (swords) and larger for 16x16
       const tex = this.sprite.scene.textures.get(icon)
       const width = (tex.getSourceImage() as any).width || 16
-      const baseScale = 2.1
-      const scale = width > 20 ? baseScale / 2 : baseScale
+      const scale = width >= 32 ? 1.0 : 1.8
       this.weaponSprite.setScale(scale)
+
+      // Ensure origin is always at the bottom-left hilt area
+      this.weaponSprite.setOrigin(0.1, 0.9)
     }
     this.weaponSprite.setVisible(show)
     this.updateWeaponFollow()
@@ -159,15 +178,44 @@ export class Player {
     this.updateWeaponVisual()
   }
 
-  playChoppingAnimation() {
-    if (!this.weaponSprite.visible) return
-    this.sprite.scene.tweens.killTweensOf(this.weaponSprite)
-    this.weaponSprite.setRotation(0)
-    this.sprite.scene.tweens.add({
-      targets: this.weaponSprite,
-      rotation: { from: -0.8, to: 0.8 },
-      duration: 150, yoyo: true, ease: "Power2.easeInOut"
-    })
+  playChoppingAnimation(isTool: boolean = true) {
+    if (isTool) {
+      if (!this.weaponSprite.visible) return
+      this.sprite.scene.tweens.killTweensOf(this.weaponSprite)
+      this.weaponSprite.setRotation(0)
+      this.sprite.scene.tweens.add({
+        targets: this.weaponSprite,
+        rotation: { from: -1.2, to: 0.8 },
+        duration: 120,
+        yoyo: true,
+        ease: "Back.easeOut"
+      })
+    } else {
+      // Hand chopping animation: a quick punch/lunge
+      this.sprite.scene.tweens.killTweensOf(this.sprite)
+      const lungeX = this.facingDirection.x * 10
+      const lungeY = this.facingDirection.y * 10
+
+      this.sprite.scene.tweens.add({
+        targets: this.sprite,
+        x: this.sprite.x + lungeX,
+        y: this.sprite.y + lungeY,
+        duration: 80,
+        yoyo: true,
+        ease: "Sine.easeInOut"
+      })
+
+      // Also slightly "punch" with the weaponSprite even if hidden/invisible 
+      // or just a small Scale pop on the sprite
+      this.sprite.scene.tweens.killTweensOf(this.sprite)
+      this.sprite.setScale(3) // Ensure base scale before tween
+      this.sprite.scene.tweens.add({
+        targets: this.sprite,
+        scale: 3.3,
+        duration: 80,
+        yoyo: true
+      })
+    }
   }
 
   playDeathAnimation(onComplete: () => void) {
@@ -189,8 +237,8 @@ export class Player {
 
   canAttack(now: number, cooldown: number): boolean {
     const item = this.equippedItemId ? ITEMS[this.equippedItemId] : null
-    const isWeapon = item?.type === "weapon"
-    return isWeapon && now - this.lastAttackAt >= cooldown
+    const canUse = !item || item.type === "weapon" || item.type === "tool"
+    return canUse && now - this.lastAttackAt >= cooldown
   }
 
   addXp(amount: number) {

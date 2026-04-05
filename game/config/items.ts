@@ -1,20 +1,7 @@
 import { Item } from "../entities/Inventory"
 
 export const ITEMS: Record<string, Item> = {
-  // Weapons
-  'wooden-sword': {
-    id: 'wooden-sword',
-    name: 'Wooden Sword',
-    description: 'A basic sword made of wood',
-    type: 'weapon',
-    icon: 'wood-sword',
-    stackable: false,
-    maxStack: 1,
-    properties: {
-      damage: 3,
-      value: 10
-    }
-  },
+
 
   'basic-bow': {
     id: 'basic-bow',
@@ -46,63 +33,138 @@ export const ITEMS: Record<string, Item> = {
     }
   },
 
-  'iron-sword': {
-    id: 'iron-sword',
-    name: 'Iron Sword',
-    description: 'A sturdy iron blade',
-    type: 'weapon',
-    icon: 'iron-sword',
+
+  // Tools
+  // Pickaxes 
+  'stonePickaxe': {
+    id: 'stonePickaxe',
+    name: 'Stone Pickaxe',
+    description: 'Good for mining',
+    type: 'tool',
+    icon: 'stonePickaxe',
     stackable: false,
     maxStack: 1,
     properties: {
-      damage: 12,
-      value: 50
+      miningPower: 4,
+      damage: 3,
+      value: 8
     }
   },
-
-  // Tools
-  'wooden-pickaxe': {
-    id: 'wooden-pickaxe',
+  'woodenPickaxe': {
+    id: 'woodenPickaxe',
     name: 'Wooden Pickaxe',
-    description: 'Good for basic mining',
+    description: 'A basic pickaxe',
     type: 'tool',
-    icon: 'pickaxe',
+    icon: 'woodenPickaxe', // Placeholder icon if wooden is missing, but user said they added them
     stackable: false,
     maxStack: 1,
     properties: {
       miningPower: 2,
-      value: 8
+      damage: 2,
+      value: 4
     }
   },
-
-  'iron-axe': {
-    id: 'iron-axe',
-    name: 'Iron Axe',
+  'ironPickaxe': {
+    id: 'ironPickaxe',
+    name: 'Iron Pickaxe',
+    description: 'High tier mining tool',
+    type: 'tool',
+    icon: 'ironPickaxe', // Placeholder
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      miningPower: 8,
+      damage: 5,
+      value: 20
+    }
+  },
+  // Axes
+  'stoneAxe': {
+    id: 'stoneAxe',
+    name: 'Stone Axe',
     description: 'Chops trees efficiently',
     type: 'tool',
-    icon: 'axe',
+    icon: 'stoneAxe',
     stackable: false,
     maxStack: 1,
     properties: {
       choppingPower: 5,
+      damage: 3,
       value: 30
     }
   },
-
-  'wooden-axe': {
-    id: 'wooden-axe',
+  'woodenAxe': {
+    id: 'woodenAxe',
     name: 'Wooden Axe',
-    description: 'A basic axe for chopping trees',
+    description: 'A basic axe',
     type: 'tool',
-    icon: 'axe',
+    icon: 'stoneAxe', // Placeholder
     stackable: false,
     maxStack: 1,
     properties: {
-      choppingPower: 2,
+      choppingPower: 3,
+      damage: 2,
       value: 5
     }
   },
+  'ironAxe': {
+    id: 'ironAxe',
+    name: 'Iron Axe',
+    description: 'Chops trees very fast',
+    type: 'tool',
+    icon: 'ironAxe',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      choppingPower: 10,
+      damage: 5,
+      value: 40
+    }
+  },
 
+
+  // Swords
+
+  // Weapons
+  'woodenSword': {
+    id: 'woodenSword',
+    name: 'Wooden Sword',
+    description: 'A basic sword made of wood',
+    type: 'weapon',
+    icon: 'woodenSword',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      damage: 3,
+      value: 10
+    }
+  },
+  'stoneSword': {
+    id: 'stoneSword',
+    name: 'Stone Sword',
+    description: 'A basic sword made of wood',
+    type: 'weapon',
+    icon: 'stoneSword',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      damage: 5,
+      value: 10
+    }
+  },
+  'ironSword': {
+    id: 'ironSword',
+    name: 'Iron Sword',
+    description: 'A basic sword made of wood',
+    type: 'weapon',
+    icon: 'ironSword',
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      damage: 7,
+      value: 10
+    }
+  },
   // Consumables
   'health-potion': {
     id: 'health-potion',
@@ -211,6 +273,19 @@ export const ITEMS: Record<string, Item> = {
     }
   },
 
+  'crafting-table': {
+    id: 'crafting-table',
+    name: 'Crafting Table',
+    description: 'Used for advanced 3x3 crafting',
+    type: 'tool', // Treated as tool/material for placement
+    icon: 'crafting-table',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 10
+    }
+  },
+
   // Loot Items
   'spider-web': {
     id: 'spider-web',
@@ -246,6 +321,18 @@ export const ITEMS: Record<string, Item> = {
     maxStack: 99,
     properties: {
       value: 2
+    }
+  },
+  'stone-block': {
+    id: 'stone-block',
+    name: 'Stone Block',
+    description: 'Solid stone for crafting',
+    type: 'material',
+    icon: 'stone-block',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      value: 3
     }
   }
 }

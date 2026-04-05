@@ -1,115 +1,125 @@
-
 import * as Phaser from "phaser"
-import { WORLD_SIZE, GRID_SIZE } from "../config/constants"
+import { WORLD_SIZE, GRID_SIZE, WORLD_SEED } from "../config/constants"
+import { WorldGenerator, ChunkData } from "./world/WorldGenerator"
+
+class Chunk {
+    public groundContainer: Phaser.GameObjects.Container
+    public objects: Phaser.GameObjects.GameObject[] = []
+    public data: ChunkData
+
+    constructor(
+        scene: Phaser.Scene,
+        cx: number,
+        cy: number,
+        size: number,
+        worldGen: WorldGenerator,
+        obstacleGroup: Phaser.Physics.Arcade.StaticGroup
+    ) {
+        this.data = worldGen.generateChunk(cx, cy, size)
+
+        const worldX = cx * size * GRID_SIZE
+        const worldY = cy * size * GRID_SIZE
+
+        // Use a container for the ground layer 
+        // This is extremely simple and avoids any Tilemap complexity or crashes!
+        this.groundContainer = scene.add.container(0, 0).setDepth(0)
+
+        // Spawn Ground Tiles
+        for (let x = 0; x < size; x++) {
+            for (let y = 0; y < size; y++) {
+                const tileInfo = this.data.tiles[x][y]
+                const px = (cx * size + x) * GRID_SIZE + GRID_SIZE / 2
+                const py = (cy * size + y) * GRID_SIZE + GRID_SIZE / 2
+
+                const tileImg = scene.add.sprite(px, py, tileInfo.key, tileInfo.frame)
+                const scale = GRID_SIZE / (tileImg.width || 16)
+                tileImg.setScale(scale)
+
+                this.groundContainer.add(tileImg)
+            }
+        }
+
+        // Spawn Objects (Rocks, Cacti, Decorations)
+        this.data.objects.forEach(obj => {
+            // Trees and Rocks are handled by their respective systems
+            if (obj.type === "green" || obj.type === "orange" || obj.type === "rock") return
+
+            const rx = obj.x * GRID_SIZE + GRID_SIZE / 2
+            const ry = obj.y * GRID_SIZE + GRID_SIZE / 2
+
+            const sprite = scene.add.sprite(rx, ry, obj.texture || 'tileset-atlas', obj.frame)
+                .setDepth(1)
+
+            const scale = GRID_SIZE / (sprite.width || 16)
+            sprite.setScale(scale)
+
+            this.objects.push(sprite)
+        })
+    }
+
+    public destroy() {
+        this.groundContainer.list.forEach(child => child.destroy())
+        this.groundContainer.destroy()
+        this.objects.forEach(obj => obj.destroy())
+        this.objects = []
+    }
+}
 
 export class MapSystem {
     private scene: Phaser.Scene
-    private map!: Phaser.Tilemaps.Tilemap
-    private layer!: Phaser.Tilemaps.TilemapLayer
-    private obstacleLayer!: Phaser.Tilemaps.TilemapLayer
+    private chunks: Map<string, Chunk> = new Map()
+    public worldGen: WorldGenerator
+    private obstacleGroup: Phaser.Physics.Arcade.StaticGroup
 
-    private static TILES = {
-        GRASS: 1,
-        DIRT: 43,
-        FLOWER: 0,
-        // Brown House (3x3)
-        HOUSE_BROWN: [
-            [48, 51, 49, 50],
-            [60, 61, 63, 62],
-            [72, 73, 74, 75]
-        ],
-        // Blue House (3x3)
-        HOUSE_BLUE: [
-            [52, 55, 53, 54],
-            [64, 65, 67, 66],
-            [72, 73, 74, 75]
-        ],
-        FENCE_H: 86,
-        FENCE_V: 87,
-        WALL: 98,
-    }
+    private readonly CHUNK_SIZE = 16
+    private readonly RENDER_RADIUS = 2
 
     constructor(scene: Phaser.Scene) {
         this.scene = scene
-        this.createMap()
+        this.worldGen = new WorldGenerator(WORLD_SEED)
+        this.obstacleGroup = scene.physics.add.staticGroup()
+
+        this.update(0, 0)
     }
 
-    private createMap() {
-        const width = Math.ceil(WORLD_SIZE / GRID_SIZE)
-        const height = Math.ceil(WORLD_SIZE / GRID_SIZE)
+    public update(playerX: number, playerY: number) {
+        const pChunkX = Math.floor(playerX / (this.CHUNK_SIZE * GRID_SIZE))
+        const pChunkY = Math.floor(playerY / (this.CHUNK_SIZE * GRID_SIZE))
 
-        this.map = this.scene.make.tilemap({
-            tileWidth: 16,
-            tileHeight: 16,
-            width: width,
-            height: height
-        })
+        for (let x = pChunkX - this.RENDER_RADIUS; x <= pChunkX + this.RENDER_RADIUS; x++) {
+            for (let y = pChunkY - this.RENDER_RADIUS; y <= pChunkY + this.RENDER_RADIUS; y++) {
+                const key = `${x},${y}`
+                if (!this.chunks.has(key)) {
+                    const chunk = new Chunk(this.scene, x, y, this.CHUNK_SIZE, this.worldGen, this.obstacleGroup)
+                    this.chunks.set(key, chunk)
 
-        const tileset = this.map.addTilesetImage('tileset', 'tileset', 16, 16)
-        if (!tileset) return
-
-        this.layer = this.map.createBlankLayer('Ground', tileset)!
-        this.layer.setScale(GRID_SIZE / 16)
-        this.layer.setDepth(0)
-
-        this.obstacleLayer = this.map.createBlankLayer('Obstacles', tileset)!
-        this.obstacleLayer.setScale(GRID_SIZE / 16)
-        this.obstacleLayer.setDepth(1)
-
-        this.generateVillage(width, height)
-        this.generateWilderness(width, height)
-
-        this.obstacleLayer.setCollisionByExclusion([-1])
-    }
-
-    private drawStructure(x: number, y: number, layout: number[][]) {
-        for (let row = 0; row < layout.length; row++) {
-            for (let col = 0; col < layout[row].length; col++) {
-                this.obstacleLayer.putTileAt(layout[row][col], x + col, y + row)
-            }
-        }
-    }
-
-    private generateVillage(w: number, h: number) {
-        const cx = Math.floor(w / 2)
-        const cy = Math.floor(h / 2)
-
-        // Dirt Paths
-        for (let i = -8; i <= 8; i++) {
-            for (let j = -1; j <= 1; j++) {
-                this.layer.putTileAt(MapSystem.TILES.DIRT, cx + i, cy + j)
-                this.layer.putTileAt(MapSystem.TILES.DIRT, cx + j, cy + i)
-            }
-        }
-
-        // village center dirt area
-        for (let i = -2; i <= 2; i++) {
-            for (let j = -2; j <= 2; j++) {
-                this.layer.putTileAt(MapSystem.TILES.DIRT, cx + i, cy + j)
-            }
-        }
-
-        // Houses
-        this.drawStructure(cx - 5, cy - 6, MapSystem.TILES.HOUSE_BROWN)
-        this.drawStructure(cx + 2, cy - 6, MapSystem.TILES.HOUSE_BLUE)
-        this.drawStructure(cx - 5, cy + 3, MapSystem.TILES.HOUSE_BLUE)
-        this.drawStructure(cx + 2, cy + 3, MapSystem.TILES.HOUSE_BROWN)
-    }
-
-    private generateWilderness(w: number, h: number) {
-        for (let x = 0; x < w; x++) {
-            for (let y = 0; y < h; y++) {
-                if (!this.layer.getTileAt(x, y) && !this.obstacleLayer.getTileAt(x, y)) {
-                    const val = Math.random()
-                    let tileIdx = MapSystem.TILES.GRASS
-                    if (val > 0.9) tileIdx = MapSystem.TILES.FLOWER
-                    this.layer.putTileAt(tileIdx, x, y)
+                    // Notify TreeSystem
+                    this.scene.events.emit('chunkLoaded', chunk.data)
                 }
             }
         }
+
+        for (const [key, chunk] of this.chunks.entries()) {
+            const [cx, cy] = key.split(',').map(Number)
+            const dist = Math.max(Math.abs(cx - pChunkX), Math.abs(cy - pChunkY))
+
+            if (dist > this.RENDER_RADIUS + 1) {
+                chunk.destroy()
+                this.chunks.delete(key)
+                this.scene.events.emit('chunkUnloaded', key)
+            }
+        }
     }
 
-    getObstacleLayer(): Phaser.Tilemaps.TilemapLayer {
-        return this.obstacleLayer
+    public addCollider(object: any, callback?: Function) {
+        this.scene.physics.add.collider(object, this.obstacleGroup, callback as any)
+    }
+
+    public getObstacleGroup(): Phaser.Physics.Arcade.StaticGroup {
+        return this.obstacleGroup
+    }
+
+    public getWorldData(): ChunkData {
+        return this.chunks.get("0,0")?.data || this.worldGen.generateChunk(0, 0, this.CHUNK_SIZE)
     }
 }

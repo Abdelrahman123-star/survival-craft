@@ -8,9 +8,15 @@ export class CombatSystem {
   private scene: Phaser.Scene
   private monsterSystem: MonsterSystem
 
+  private godMode: boolean = false
+
   constructor(scene: Phaser.Scene, monsterSystem: MonsterSystem) {
     this.scene = scene
     this.monsterSystem = monsterSystem
+  }
+
+  public setGodMode(enabled: boolean) {
+    this.godMode = enabled
   }
 
   handlePlayerAttack(
@@ -22,7 +28,9 @@ export class CombatSystem {
     const damage = item?.properties?.damage ?? 1
     const cooldown = item?.properties?.cooldown ?? PLAYER_ATTACK_COOLDOWN_MS
 
-    if (!item || item.type !== "weapon" || !player.canAttack(now, cooldown)) {
+    const canAttack = !item || item.type === "weapon" || item.type === "tool"
+
+    if (!canAttack || !player.canAttack(now, cooldown)) {
       return { hit: false, isCrit: false, damage: 0, monstersHit: 0 }
     }
 
@@ -79,7 +87,7 @@ export class CombatSystem {
   }
 
   public applyMonsterDamage(player: Player, damage: number): boolean {
-    if (this.scene.time.now - player.lastHitAt < PLAYER_HIT_COOLDOWN_MS) {
+    if (this.godMode || this.scene.time.now - player.lastHitAt < PLAYER_HIT_COOLDOWN_MS) {
       return false
     }
     player.lastHitAt = this.scene.time.now
@@ -179,26 +187,49 @@ export class CombatSystem {
     player.updateWeaponFollow()
 
     this.scene.tweens.killTweensOf(player.weaponSprite)
-    player.weaponSprite.setRotation(0)
-    player.weaponSprite.setScale(2.1)
+    this.scene.tweens.killTweensOf(player.sprite)
 
-    // Sword swing animation
+    const facingRight = player.facingDirection.x >= 0
+    const swingAngle = facingRight ? 1.5 : -1.5
+    const baseScale = player.weaponSprite.scale
+
+    // 1. Player Lunge
+    const lungeDist = 15
+    this.scene.tweens.add({
+      targets: player.sprite,
+      x: player.sprite.x + player.facingDirection.x * lungeDist,
+      y: player.sprite.y + player.facingDirection.y * lungeDist,
+      duration: 100,
+      yoyo: true,
+      ease: "Quad.easeOut"
+    })
+
+    // 2. Enhanced Sword Swing
+    player.weaponSprite.setRotation(facingRight ? -0.8 : 0.8)
     this.scene.tweens.add({
       targets: player.weaponSprite,
-      rotation: { from: -0.7, to: 0.9 },
-      duration: 140,
-      yoyo: true,
-      ease: "Sine.easeInOut",
+      rotation: facingRight ? 1.2 : -1.2,
+      duration: 150,
+      ease: "Expo.easeOut",
+      onComplete: () => {
+        // Return to resting rotation smoothly
+        this.scene.tweens.add({
+          targets: player.weaponSprite,
+          rotation: facingRight ? 0.3 : -0.3,
+          duration: 200,
+          ease: "Sine.easeInOut"
+        })
+      }
     })
 
     if (isCrit) {
-      // Critical hit makes the sword bigger and glow
+      // Critical hit effects
       this.scene.tweens.add({
         targets: player.weaponSprite,
-        scale: 2.8,
-        duration: 90,
+        scale: baseScale * 1.5,
+        duration: 100,
         yoyo: true,
-        ease: "Quad.easeOut",
+        ease: "Back.easeOut"
       })
 
       // Add a glow effect to the sword
@@ -219,22 +250,23 @@ export class CombatSystem {
       })
     }
 
-    // Slash effect - bigger and more yellow for crit
+    // Slash effect - more dynamic arc shape (using a circle that we scale)
     const slashColor = isCrit ? 0xFFD700 : 0xffffff
-    const slashAlpha = isCrit ? 0.7 : 0.35
-    const slashWidth = isCrit ? 80 : 60
+    const slash = this.scene.add.circle(
+      player.sprite.x + player.facingDirection.x * 40,
+      player.sprite.y + player.facingDirection.y * 20,
+      30, slashColor, 0.6
+    ).setDepth(3).setScale(1, 0.2)
 
-    const slash = this.scene.add.rectangle(
-      player.sprite.x, player.sprite.y, slashWidth, 15, slashColor, slashAlpha
-    )
-      .setDepth(3)
-      .setAngle(player.weaponSprite.flipX ? 200 : 20)
+    slash.setAngle(player.facingDirection.angle() * Phaser.Math.RAD_TO_DEG)
 
     this.scene.tweens.add({
       targets: slash,
+      scaleX: 2.5,
+      scaleY: 0.1,
       alpha: 0,
-      scale: 1.5,
-      duration: 150,
+      duration: 200,
+      ease: "Power2",
       onComplete: () => slash.destroy(),
     })
   }

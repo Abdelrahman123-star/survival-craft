@@ -6,9 +6,12 @@ import { Player } from "../entities/Player"
 export class MonsterSystem {
   private monsters: Monster[] = []
   private scene: Phaser.Scene
-  private monsterSprites: Phaser.Physics.Arcade.Sprite[] = [] // Track sprites separately
+  private monsterSprites: Phaser.Physics.Arcade.Sprite[] = []
   private monsterGroup: Phaser.Physics.Arcade.Group
   public onMonsterDeath?: (type: string, x: number, y: number) => void
+
+  private lastPlayerX: number = 750
+  private lastPlayerY: number = 750
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -26,35 +29,52 @@ export class MonsterSystem {
     })
   }
 
-  spawnMonster() {
-    const x = Math.random() * WORLD_SIZE
-    const y = Math.random() * WORLD_SIZE
-    const roll = Math.random()
-    let type: MonsterType = "spider"
-    if (roll < 0.50) type = "spider"
-    else if (roll < 0.72) type = "ghost"
-    else type = "brute"
+  spawnMonster(type?: MonsterType, x?: number, y?: number) {
+    let spawnX = x
+    let spawnY = y
 
-    const monster = new Monster(this.scene, x, y, type)
+    if (spawnX === undefined || spawnY === undefined) {
+      // Determine spawn point 600-1000 pixels away from the player
+      const angle = Math.random() * Math.PI * 2
+      const dist = 600 + Math.random() * 400
+      spawnX = this.lastPlayerX + Math.cos(angle) * dist
+      spawnY = this.lastPlayerY + Math.sin(angle) * dist
+    }
+
+    let monsterType = type
+    if (!monsterType) {
+      const roll = Math.random()
+      if (roll < 0.50) monsterType = "spider"
+      else if (roll < 0.72) monsterType = "ghost"
+      else monsterType = "brute"
+    }
+
+    const monster = new Monster(this.scene, spawnX, spawnY, monsterType)
     this.monsters.push(monster)
 
-    // add to physics group so overlaps keep working as monsters spawn/die
+    // add to physics group
     this.monsterGroup.add(monster.sprite)
     this.updateMonsterSprites()
   }
 
   update(player: Player, onAttack?: (damage: number) => void) {
-    // First, remove any dead monsters
+    this.lastPlayerX = player.sprite.x
+    this.lastPlayerY = player.sprite.y
+
+    // First, remove any dead monsters AND cull distant ones
     this.monsters = this.monsters.filter(monster => {
-      const isActive = monster.isActive()
-      if (!isActive) {
-        // Monster is dead, remove it
-        return false
+      if (!monster.isActive()) return false
+
+      const dist = Phaser.Math.Distance.Between(this.lastPlayerX, this.lastPlayerY, monster.sprite.x, monster.sprite.y)
+      if (dist > 1800) {
+        monster.destroy()
+        return false // Despawn far monsters
       }
+
       return true
     })
 
-    // Update sprite array
+    // Update sprite array for collision detection
     this.updateMonsterSprites()
 
     // Then update remaining monsters

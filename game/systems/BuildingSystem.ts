@@ -22,7 +22,8 @@ export class BuildingSystem {
     }
 
     update(player: Player, selectedItem: any) {
-        if (selectedItem?.item?.id === "wood-planks" && !player.isDead) {
+        if ((selectedItem?.item?.id === "wood-planks" || selectedItem?.item?.id === "crafting-table") && !player.isDead) {
+            this.previewSprite.setTexture(selectedItem.item.icon)
             this.updatePreview(player)
         } else {
             this.previewSprite.setVisible(false)
@@ -47,7 +48,8 @@ export class BuildingSystem {
         if (!this.previewSprite.visible || player.isDead) return
 
         // Final check for item
-        if (selectedItem?.item?.id !== "wood-planks" || selectedItem.quantity <= 0) return
+        const id = selectedItem?.item?.id
+        if ((id !== "wood-planks" && id !== "crafting-table") || selectedItem.quantity <= 0) return
 
         const x = this.previewSprite.x
         const y = this.previewSprite.y
@@ -57,8 +59,9 @@ export class BuildingSystem {
         if (occupied) return
 
         // Create the block
-        const block = this.blocksGroup.create(x, y, "wood-planks").setScale(3).refreshBody()
+        const block = this.blocksGroup.create(x, y, selectedItem.item.icon).setScale(3).refreshBody()
         block.setDepth(1)
+        block.setData("itemId", id)
         block.setData("hp", 75)
         block.setData("maxHp", 75)
 

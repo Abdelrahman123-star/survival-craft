@@ -25,17 +25,18 @@ export class WorldOverlay {
     // Depth: above tilemap (0) and sprites (1-2), below HUD (100+)
     const OVERLAY_DEPTH = 50
 
-    const mapSize = Math.ceil(WORLD_SIZE / GRID_SIZE) * GRID_SIZE
-
+    // Set scroll factor to 0 so it stays locked to screen. Use a very large rect safely covering any resolution.
     this.darknessRect = scene.add
-      .rectangle(mapSize / 2, mapSize / 2, mapSize, mapSize, 0x000000, 0)
+      .rectangle(scene.cameras.main.width / 2, scene.cameras.main.height / 2, 4000, 4000, 0x000000, 0)
       .setDepth(OVERLAY_DEPTH)
       .setAlpha(0)
+      .setScrollFactor(0)
 
     this.tintRect = scene.add
-      .rectangle(mapSize / 2, mapSize / 2, mapSize, mapSize, 0xffffff, 0)
+      .rectangle(scene.cameras.main.width / 2, scene.cameras.main.height / 2, 4000, 4000, 0xffffff, 0)
       .setDepth(OVERLAY_DEPTH + 1)
       .setAlpha(0)
+      .setScrollFactor(0)
   }
 
   update(state: DayNightState, delta: number) {
