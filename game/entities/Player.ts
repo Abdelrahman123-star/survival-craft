@@ -87,8 +87,8 @@ export class Player {
     // this.inventory.addItem(ITEMS["ironSword"], 1)
     // this.inventory.addItem(ITEMS["stone-block"], 40)
     // this.inventory.addItem(ITEMS["woodenPickaxe"], 1)
-    this.inventory.addItem(ITEMS["stoneAxe"], 1)
     // this.inventory.addItem(ITEMS["woodenAxe"], 1)
+    // this.inventory.addItem(ITEMS["stoneAxe"], 1)
     // this.inventory.addItem(ITEMS["ironAxe"], 1)
   }
 

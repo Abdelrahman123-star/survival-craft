@@ -79,6 +79,20 @@ export const ITEMS: Record<string, Item> = {
     }
   },
   // Axes
+  'woodenAxe': {
+    id: 'woodenAxe',
+    name: 'Wooden Axe',
+    description: 'A basic axe',
+    type: 'tool',
+    icon: 'woodenAxe', // Placeholder
+    stackable: false,
+    maxStack: 1,
+    properties: {
+      choppingPower: 2,
+      damage: 2,
+      value: 5
+    }
+  },
   'stoneAxe': {
     id: 'stoneAxe',
     name: 'Stone Axe',
@@ -88,23 +102,9 @@ export const ITEMS: Record<string, Item> = {
     stackable: false,
     maxStack: 1,
     properties: {
-      choppingPower: 5,
+      choppingPower: 4,
       damage: 3,
       value: 30
-    }
-  },
-  'woodenAxe': {
-    id: 'woodenAxe',
-    name: 'Wooden Axe',
-    description: 'A basic axe',
-    type: 'tool',
-    icon: 'stoneAxe', // Placeholder
-    stackable: false,
-    maxStack: 1,
-    properties: {
-      choppingPower: 3,
-      damage: 2,
-      value: 5
     }
   },
   'ironAxe': {
@@ -116,7 +116,7 @@ export const ITEMS: Record<string, Item> = {
     stackable: false,
     maxStack: 1,
     properties: {
-      choppingPower: 10,
+      choppingPower: 7,
       damage: 5,
       value: 40
     }

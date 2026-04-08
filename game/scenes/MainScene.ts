@@ -28,6 +28,10 @@ import { DropSystem } from "../systems/DropSystem"
 import { HAND_CHOPPING_POWER, HAND_MINING_POWER } from "../config/constants"
 import { DebugSystem } from "../systems/DebugSystem"
 
+import { IMAGE_ASSETS } from "../config/assets"
+// Animal System
+import { AnimalSystem } from "../systems/Animalsystem"
+
 export default class MainScene extends Phaser.Scene {
     private treeSystem!: TreeSystem
     private miningSystem!: MiningSystem
@@ -62,78 +66,34 @@ export default class MainScene extends Phaser.Scene {
     private dropSystem!: DropSystem
     private dropKey!: Phaser.Input.Keyboard.Key
     private debugSystem!: DebugSystem
+    // Animal System
+    private animalSystem!: AnimalSystem
 
     constructor() { super("MainScene") }
 
     preload() {
+
+
         document.fonts.load('16px Alagard')
         this.load.spritesheet("player", "/assets/Charachter Animation/CharachterAnimation.png", { frameWidth: 48, frameHeight: 48 })
-        const assets: Record<string, string> = {
-            ground: "/assets/plain-grass.png",
-            "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
-            tree_bottom: "/assets/tree.png",
-            spider: "/assets/spider.png", merchant: "/assets/merchant.png",
+        const assets: Record<string, string> = IMAGE_ASSETS
 
-            "woodenSword": "/assets/tools/woodenSword.png",
-            "stoneSword": "/assets/tools/stoneSword.png",
-            "ironSword": "/assets/tools/ironSword.png",
-
-            "woodenAxe": "/assets/tools/woodenAxe.png",
-            "stoneAxe": "/assets/tools/stoneAxe.png",
-            "ironAxe": "/assets/tools/ironAxe.png",
-
-            "woodenPickaxe": "/assets/tools/woodenPickaxe.png",
-            "stonePickaxe": "/assets/tools/stonePickaxe.png",
-            "ironPickaxe": "/assets/tools/ironPickaxe.png",
-
-            bow: "/assets/bow.png",
-            ghost: "/assets/ghost.png", "wood-planks": "/assets/wood-planks.jpg",
-            stick: "/assets/stick.png", "crafting-table": "/assets/crafting-table.png",
-            hammer: "/assets/hammer.png", brute: "/assets/spider.png",
-
-            feather: "/assets/loot/feather.png",
-            "spider-eye": "/assets/loot/spider_eye.png",
-            "spider-web": "/assets/loot/spider_web.png",
-            "stone-block": "/assets/stone-block.png",
-
-            // GrassBiom assets
-            grass1: "/assets/Bioms/grass1.png",
-            grass2: "/assets/Bioms/grass2.png",
-            mushroom: "/assets/Bioms/mushroom.png",
-            flowergrass: "/assets/Bioms/flowergrass.png",
-            smallflowers: "/assets/Bioms/smallflowers.png",
-
-            tree_green_top: "/assets/Bioms/TopGreenTree.png",
-            tree_green_bottom: "/assets/Bioms/BottomGreenTree.png",
-            tree_orange_top: "/assets/Bioms/TopOrangeTree.png",
-            tree_orange_bottom: "/assets/Bioms/BottomOrangeTree.png",
-
-            // DesertBiom assets
-            cactus_big: "/assets/Bioms/cactus_big.png",
-            cactus_small: "/assets/Bioms/cactus_small.png",
-            desert_grass: "/assets/Bioms/desert_grass.png",
-            sand: "/assets/Bioms/sand.png",
-            sand2: "/assets/Bioms/sand2.png",
-            rock1: "/assets/Rocks/rock1.png",
-            rock2: "/assets/Rocks/rock2.png",
-            rock3: "/assets/Rocks/rock3.png",
-            rock4: "/assets/Rocks/rock4.png",
-            rock5: "/assets/Rocks/rock5.png",
-            "tileset-atlas": "/assets/tileset.png",
-
-        }
         Object.entries(assets).forEach(([k, v]) => this.load.image(k, v))
         this.load.spritesheet("tileset", "/assets/tileset.png", { frameWidth: 16, frameHeight: 16 })
         this.load.image("craftTiles", "/assets/ui/crafting-ui/craftTiles.png")
         this.load.tilemapTiledJSON("craft-tilemap", "/assets/ui/crafting-ui/craft-tilemap.json")
         this.load.image("inventory-tilemap", "/assets/ui/inventory/inventoryTilemap.png")
         this.load.tilemapTiledJSON("inventory-map", "/assets/ui/inventory/inventoryMap.json")
+        // Animal System
+        this.animalSystem = new AnimalSystem(this)
+        this.animalSystem.preload()
     }
 
     create() {
         window.addEventListener("contextmenu", (e) => e.preventDefault())
         this.game.canvas.oncontextmenu = () => false
         this.setupControls()
+
         this.treeSystem = new TreeSystem(this)
         this.miningSystem = new MiningSystem(this)
         this.mapSystem = new MapSystem(this)
@@ -249,6 +209,9 @@ export default class MainScene extends Phaser.Scene {
         })
 
         this.setupDebugSystem()
+        // animal system
+        this.animalSystem.create()
+
     }
 
     private setupDebugSystem() {
@@ -352,6 +315,9 @@ export default class MainScene extends Phaser.Scene {
         this.dayNightHUD.update(dayNightState)
 
         this.debugSystem.update(this.player, this.dayNightSystem, this.monsterSystem)
+        // animal system
+        this.animalSystem.update(this.player, this.game.loop.delta)
+
     }
     private setupCamera() {
         this.cameras.main.startFollow(this.player.sprite)

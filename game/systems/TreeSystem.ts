@@ -48,7 +48,7 @@ export class TreeSystem {
   public createTree(x: number, y: number, type: TreeType = "green"): Phaser.GameObjects.Container | undefined {
     if (!this.trees.active) return undefined
     const config = TreeSystem.TREE_CONFIG[type]
-    const random = Math.random() * 33 + 10;
+    const random = Math.random() * 33 + 12;
     // Use specific coordinates (already in world space pixels)
     const gx = x + GRID_SIZE / 2
     const gy = y + GRID_SIZE / 2
