@@ -116,7 +116,7 @@ export default class SecretLevelScene extends Phaser.Scene {
     }
 
     this.buildingSystem = new BuildingSystem(this)
-    this.questSystem = new QuestSystem(this)
+    // this.questSystem = new QuestSystem(this)
     this.combatSystem = new CombatSystem(this, this.createBossMonsterSystem())
     this.hud = new HUD(this)
     this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
