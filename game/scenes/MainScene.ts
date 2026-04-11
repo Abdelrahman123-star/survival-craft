@@ -101,10 +101,14 @@ export default class MainScene extends Phaser.Scene {
         const chunkLoadedListener = (data: any) => {
             this.treeSystem.onChunkLoaded(data)
             this.miningSystem.onChunkLoaded(data)
+            this.animalSystem.onChunkLoaded(data)
+            this.monsterSystem.onChunkLoaded(data)
         }
-        const chunkUnloadedListener = (key: string) => {
+        const chunkUnloadedListener = (key: string, cx: number, cy: number) => {
             this.treeSystem.onChunkUnloaded(key)
             this.miningSystem.onChunkUnloaded(key)
+            this.animalSystem.onChunkUnloaded(key)
+            this.monsterSystem.onChunkUnloaded(key)
         }
 
         this.events.on('chunkLoaded', chunkLoadedListener)
@@ -146,7 +150,20 @@ export default class MainScene extends Phaser.Scene {
                 })
             }
         }
-        this.combatSystem = new CombatSystem(this, this.monsterSystem)
+        this.animalSystem.onAnimalDeath = (species, x, y) => {
+            const xpValues: Record<string, number> = { fox: 15, deer: 25, black_grouse: 10 }
+            const xp = xpValues[species] || 10
+            this.player.addXp(xp)
+            this.hud.update(this.player, undefined as any)
+
+            // Drop Chicken Leg
+            const angle = Math.random() * Math.PI * 2
+            const dist = Math.random() * 30
+            const dx = Math.cos(angle) * dist
+            const dy = Math.sin(angle) * dist
+            this.dropSystem.spawnDroppedItem(ITEMS['chicken-leg'], 1, x, y, x + dx, y + dy)
+        }
+        this.combatSystem = new CombatSystem(this, this.monsterSystem, this.animalSystem)
         this.hud = new HUD(this)
         this.uiManager = new UIManager()
         this.inventoryUI = new InventoryUI(this, this.player.inventory, this.player)
@@ -314,7 +331,16 @@ export default class MainScene extends Phaser.Scene {
         this.worldOverlay.update(dayNightState, this.game.loop.delta)
         this.dayNightHUD.update(dayNightState)
 
-        this.debugSystem.update(this.player, this.dayNightSystem, this.monsterSystem)
+        this.debugSystem.update(
+            this.player,
+            this.mapSystem,
+            this.dayNightSystem,
+            this.monsterSystem,
+            this.animalSystem,
+            this.treeSystem,
+            this.dropSystem,
+            this.buildingSystem
+        )
         // animal system
         this.animalSystem.update(this.player, this.game.loop.delta)
 

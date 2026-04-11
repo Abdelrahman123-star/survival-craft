@@ -128,4 +128,8 @@ export class DropSystem {
         this.droppedItems.forEach(e => e.sprite.destroy())
         this.droppedItems = []
     }
+
+    getDroppedItemCount(): number {
+        return this.droppedItems.length
+    }
 }

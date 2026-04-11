@@ -1,6 +1,6 @@
 import * as Phaser from "phaser"
 import { Monster, MonsterType } from "../entities/Monster"
-import { MONSTER_SPAWN_DELAY, WORLD_SIZE } from "../config/constants"
+// import { MONSTER_SPAWN_DELAY, WORLD_SIZE } from "../config/constants"
 import { Player } from "../entities/Player"
 
 export class MonsterSystem {
@@ -9,74 +9,57 @@ export class MonsterSystem {
   private monsterSprites: Phaser.Physics.Arcade.Sprite[] = []
   private monsterGroup: Phaser.Physics.Arcade.Group
   public onMonsterDeath?: (type: string, x: number, y: number) => void
-
-  private lastPlayerX: number = 750
-  private lastPlayerY: number = 750
+  private chunkMonsters: Map<string, Monster[]> = new Map()
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
     this.monsterGroup = scene.physics.add.group()
-
-    // Spawn initial monsters
-    for (let i = 0; i < 2; i++) this.spawnMonster()
-
-    // Set up spawning timer
-    scene.time.addEvent({
-      delay: MONSTER_SPAWN_DELAY,
-      callback: this.spawnMonster,
-      callbackScope: this,
-      loop: true,
-    })
   }
 
-  spawnMonster(type?: MonsterType, x?: number, y?: number) {
-    let spawnX = x
-    let spawnY = y
+  public onChunkLoaded(data: any): void {
+    const key = `${data.x},${data.y}`
+    if (this.chunkMonsters.has(key)) return
 
-    if (spawnX === undefined || spawnY === undefined) {
-      // Determine spawn point 600-1000 pixels away from the player
-      const angle = Math.random() * Math.PI * 2
-      const dist = 600 + Math.random() * 400
-      spawnX = this.lastPlayerX + Math.cos(angle) * dist
-      spawnY = this.lastPlayerY + Math.sin(angle) * dist
+    const monstersInChunk: Monster[] = []
+    data.objects.forEach((obj: any) => {
+      if (obj.type === "monster") {
+        const type = obj.texture as MonsterType
+        const x = obj.x * 48 + 24 // GRID_SIZE=48
+        const y = obj.y * 48 + 24
+        const monster = new Monster(this.scene, x, y, type)
+        this.monsters.push(monster)
+        this.monsterGroup.add(monster.sprite)
+        monstersInChunk.push(monster)
+      }
+    })
+    this.chunkMonsters.set(key, monstersInChunk)
+    this.updateMonsterSprites()
+  }
+
+  public onChunkUnloaded(key: string): void {
+    const monstersInChunk = this.chunkMonsters.get(key)
+    if (monstersInChunk) {
+      monstersInChunk.forEach(monster => {
+        monster.destroy()
+        this.monsters = this.monsters.filter(m => m !== monster)
+      })
+      this.chunkMonsters.delete(key)
+      this.updateMonsterSprites()
     }
+  }
 
-    let monsterType = type
-    if (!monsterType) {
-      const roll = Math.random()
-      if (roll < 0.50) monsterType = "spider"
-      else if (roll < 0.72) monsterType = "ghost"
-      else monsterType = "brute"
-    }
-
-    const monster = new Monster(this.scene, spawnX, spawnY, monsterType)
+  public spawnMonster(type: MonsterType, x?: number, y?: number) {
+    const sx = x ?? 0
+    const sy = y ?? 0
+    const monster = new Monster(this.scene, sx, sy, type)
     this.monsters.push(monster)
-
-    // add to physics group
     this.monsterGroup.add(monster.sprite)
     this.updateMonsterSprites()
+    return monster
   }
 
+
   update(player: Player, onAttack?: (damage: number) => void) {
-    this.lastPlayerX = player.sprite.x
-    this.lastPlayerY = player.sprite.y
-
-    // First, remove any dead monsters AND cull distant ones
-    this.monsters = this.monsters.filter(monster => {
-      if (!monster.isActive()) return false
-
-      const dist = Phaser.Math.Distance.Between(this.lastPlayerX, this.lastPlayerY, monster.sprite.x, monster.sprite.y)
-      if (dist > 1800) {
-        monster.destroy()
-        return false // Despawn far monsters
-      }
-
-      return true
-    })
-
-    // Update sprite array for collision detection
-    this.updateMonsterSprites()
-
     // Then update remaining monsters
     this.monsters.forEach(monster => {
       monster.update(player.sprite, onAttack)

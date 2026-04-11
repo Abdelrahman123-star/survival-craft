@@ -1,18 +1,21 @@
 import * as Phaser from "phaser"
 import { Player } from "../entities/Player"
 import { MonsterSystem } from "./MonsterSystem"
+import { AnimalSystem } from "./Animalsystem"
 import { PLAYER_ATTACK_RANGE, PLAYER_ATTACK_COOLDOWN_MS, PLAYER_HIT_COOLDOWN_MS } from "../config/constants"
 import { InventorySlot } from "../entities/Inventory"
 
 export class CombatSystem {
   private scene: Phaser.Scene
   private monsterSystem: MonsterSystem
+  private animalSystem: AnimalSystem
 
   private godMode: boolean = false
 
-  constructor(scene: Phaser.Scene, monsterSystem: MonsterSystem) {
+  constructor(scene: Phaser.Scene, monsterSystem: MonsterSystem, animalSystem: AnimalSystem) {
     this.scene = scene
     this.monsterSystem = monsterSystem
+    this.animalSystem = animalSystem
   }
 
   public setGodMode(enabled: boolean) {
@@ -59,12 +62,23 @@ export class CombatSystem {
       }
     })
 
+    // --- Animal Combat ---
+    const animalsHit = this.animalSystem.getAnimalsInRange(
+      player.sprite.x, player.sprite.y, PLAYER_ATTACK_RANGE
+    )
+
+    animalsHit.forEach(sprite => {
+      if (this.animalSystem.damageAnimal(sprite, finalDamage)) {
+        this.showDamageNumber(sprite.x, sprite.y, finalDamage, isCrit)
+      }
+    })
+
     // If it was a crit and we hit something, show a screen flash and crit text
-    if (isCrit && monstersHit > 0) {
+    if (isCrit && (monstersHit > 0 || animalsHit.length > 0)) {
       this.showCritEffect(player.sprite.x, player.sprite.y)
     }
 
-    return { hit: monstersHit > 0, isCrit, damage: finalDamage, monstersHit }
+    return { hit: monstersHit > 0 || animalsHit.length > 0, isCrit, damage: finalDamage, monstersHit }
   }
 
   handlePlayerHit(player: Player, monsterSprite: Phaser.Physics.Arcade.Sprite, now: number): boolean {

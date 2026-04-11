@@ -334,5 +334,18 @@ export const ITEMS: Record<string, Item> = {
     properties: {
       value: 3
     }
+  },
+  'chicken-leg': {
+    id: 'chicken-leg',
+    name: 'Chicken Leg',
+    description: 'A tasty drumstick dropped by animals.',
+    type: 'consumable',
+    icon: 'chickenLeg',
+    stackable: true,
+    maxStack: 99,
+    properties: {
+      healAmount: 15,
+      value: 5
+    }
   }
 }

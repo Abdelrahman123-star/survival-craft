@@ -67,6 +67,17 @@ export class WorldGenerator {
                         objects.push({ x: worldX, y: worldY, type: "decor", biome: biome.type, texture: decor.key, frame: decor.frame })
                     }
                 }
+                // Entity Spawning (Animals & Monsters)
+                else if (spawnRoll < biome.rockDensity + biome.treeDensity + biome.decorDensity + biome.animalPackDensity) {
+                    const species = ["fox", "deer", "black_grouse", "calf", "lamb"]
+                    const animalType = species[Math.floor(this.getDeterministicValue(worldX, worldY, "animal_sp") * species.length)]
+                    objects.push({ x: worldX, y: worldY, type: "animal_herd", biome: biome.type, texture: animalType })
+                }
+                else if (spawnRoll < biome.rockDensity + biome.treeDensity + biome.decorDensity + biome.animalPackDensity + biome.monsterDensity) {
+                    const monsters = ["spider", "ghost", "brute"]
+                    const monsterType = monsters[Math.floor(this.getDeterministicValue(worldX, worldY, "monster_sp") * monsters.length)]
+                    objects.push({ x: worldX, y: worldY, type: "monster", biome: biome.type, texture: monsterType })
+                }
             }
         }
 

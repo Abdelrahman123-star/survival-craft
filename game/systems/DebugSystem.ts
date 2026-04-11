@@ -65,7 +65,7 @@ export class DebugSystem {
 
     private setupDebugUI() {
         // Create debug panel background
-        this.panelBg = this.scene.add.rectangle(10, 10, 300, 240, 0x000000, 0.8)
+        this.panelBg = this.scene.add.rectangle(10, 10, 320, 380, 0x000000, 0.8)
         this.panelBg.setOrigin(0, 0)
         this.panelBg.setDepth(1000)
         this.panelBg.setScrollFactor(0)
@@ -161,14 +161,14 @@ export class DebugSystem {
         console.log("F12 - Fast Forward Time (Hold)");
     }
 
-    public update(player: Player, dayNightSystem?: any, monsterSystem?: any) {
+    public update(player: Player, mapSystem: any, dayNightSystem?: any, monsterSystem?: any, animalSystem?: any, treeSystem?: any, dropSystem?: any, buildingSystem?: any) {
         this.handleDebugInputs(player, dayNightSystem, monsterSystem);
 
         if (!this.isDebugVisible && !this.options.showFPS && !this.options.showCoordinates) {
             return;
         }
 
-        this.updateDebugDisplay(player);
+        this.updateDebugDisplay(player, mapSystem, monsterSystem, animalSystem, treeSystem, dropSystem, buildingSystem);
 
         if (this.options.showFPS) {
             this.updateFPSCounter();
@@ -246,12 +246,27 @@ export class DebugSystem {
 
     }
 
-    private updateDebugDisplay(player: Player) {
+    private updateDebugDisplay(player: Player, mapSystem: any, monsterSystem?: any, animalSystem?: any, treeSystem?: any, dropSystem?: any, buildingSystem?: any) {
         let debugInfo = "";
 
         if (this.options.showCoordinates) {
             debugInfo += `Position: (${Math.floor(player.sprite.x)}, ${Math.floor(player.sprite.y)})\n`;
+            if (mapSystem) {
+                const biome = mapSystem.getBiomeAt(player.sprite.x, player.sprite.y);
+                debugInfo += `Biome: ${biome}\n`;
+            }
         }
+
+        debugInfo += `\n=== Performance ===\n`;
+        debugInfo += `Total Game Objects: ${this.scene.children.length}\n`;
+        debugInfo += `Physics Bodies: ${this.scene.physics.world.bodies.size}\n`;
+        if (mapSystem) debugInfo += `Chunks Loaded: ${mapSystem.getLoadedChunkCount()}\n`;
+
+        if (monsterSystem) debugInfo += `Monsters: ${monsterSystem.getMonsterGroup().getLength()}\n`;
+        if (animalSystem) debugInfo += `Animals: ${animalSystem.getGroup().getLength()}\n`;
+        if (treeSystem) debugInfo += `Trees: ${treeSystem.getTreeCount()}\n`;
+        if (dropSystem) debugInfo += `Dropped Items: ${dropSystem.getDroppedItemCount()}\n`;
+        if (buildingSystem) debugInfo += `Buildings: ${buildingSystem.getBlocksGroup().getLength()}\n`;
 
         if (this.options.showQuestDebug) {
             debugInfo += `Quests Active: Check console for details\n`;
@@ -267,8 +282,6 @@ export class DebugSystem {
         debugInfo += `Unlimited Resources: ${this.options.unlimitedResources ? "✓" : "✗"}\n`;
         debugInfo += `Fast Movement: ${this.options.fastMovement ? "✓" : "✗"}\n`;
         debugInfo += `Day/Night Locked: ${this.options.disableDayNight ? "✓" : "✗"}\n`;
-
-
 
         this.debugText.setText(debugInfo);
     }
@@ -287,23 +300,31 @@ export class DebugSystem {
 
     private drawGrid() {
         this.gridGraphics.clear();
-        this.gridGraphics.lineStyle(1, 0x00ff00, 0.3);
+        this.gridGraphics.lineStyle(2, 0xffff00, 0.5); // Yellow for chunks
 
-        const gridSize = 50;
-        const width = WORLD_SIZE;
-        const height = WORLD_SIZE;
+        const chunkSizePx = 16 * 48; // CHUNK_SIZE * GRID_SIZE
+        const camera = this.scene.cameras.main;
+        const view = camera.worldView;
 
-        for (let x = 0; x <= width; x += gridSize) {
-            this.gridGraphics.moveTo(x, 0);
-            this.gridGraphics.lineTo(x, height);
-            this.gridGraphics.strokePath();
+        // Calculate visible chunk lines
+        const xStart = Math.floor(view.left / chunkSizePx) * chunkSizePx;
+        const xEnd = Math.ceil(view.right / chunkSizePx) * chunkSizePx;
+        const yStart = Math.floor(view.top / chunkSizePx) * chunkSizePx;
+        const yEnd = Math.ceil(view.bottom / chunkSizePx) * chunkSizePx;
+
+        // Draw vertical lines
+        for (let x = xStart; x <= xEnd; x += chunkSizePx) {
+            this.gridGraphics.moveTo(x, yStart);
+            this.gridGraphics.lineTo(x, yEnd);
         }
 
-        for (let y = 0; y <= height; y += gridSize) {
-            this.gridGraphics.moveTo(0, y);
-            this.gridGraphics.lineTo(width, y);
-            this.gridGraphics.strokePath();
+        // Draw horizontal lines
+        for (let y = yStart; y <= yEnd; y += chunkSizePx) {
+            this.gridGraphics.moveTo(xStart, y);
+            this.gridGraphics.lineTo(xEnd, y);
         }
+
+        this.gridGraphics.strokePath();
     }
 
     private showNotification(message: string) {

@@ -1,7 +1,7 @@
 // World
 export const WORLD_SIZE = 1500
 export const GRID_SIZE = 48
-export const PLAYER_SPEED = 200
+export const PLAYER_SPEED = 220
 export const PLAYER_MAX_HP = 20
 export const PLAYER_ATTACK_RANGE = 90
 export const PLAYER_ATTACK_COOLDOWN_MS = 260
@@ -9,7 +9,7 @@ export const PLAYER_HIT_COOLDOWN_MS = 0
 export const IDLE_ANIM_FRAME_RATE = 3
 
 // Monsters
-export const MONSTER_SPAWN_DELAY = 120000
+// export const MONSTER_SPAWN_DELAY = 120000
 export const SPIDER_MAX_HP = 6
 export const SPIDER_SPEED = 140
 
@@ -72,8 +72,8 @@ export const SHOP_ITEMS = [
 ]
 
 // World Gen
-export const WORLD_SEED = "test"
-export const GROUND_TILES = ["ground", "ground", "ground", "ground", "grass", "grass", "flower-grass"]
+export const WORLD_SEED = "412343"
+// export const GROUND_TILES = ["ground", "ground", "ground", "ground", "grass", "grass", "flower-grass"]
 
 
 

@@ -1,26 +1,28 @@
 export const IMAGE_ASSETS: Record<string, string> = {
-
+    // swords
     "woodenSword": "/assets/tools/woodenSword.png",
     "stoneSword": "/assets/tools/stoneSword.png",
     "ironSword": "/assets/tools/ironSword.png",
-
+    // Axes
     "woodenAxe": "/assets/tools/woodenAxe.png",
     "stoneAxe": "/assets/tools/stoneAxe.png",
     "ironAxe": "/assets/tools/ironAxe.png",
-
+    // Pickaxes
     "woodenPickaxe": "/assets/tools/woodenPickaxe.png",
     "stonePickaxe": "/assets/tools/stonePickaxe.png",
     "ironPickaxe": "/assets/tools/ironPickaxe.png",
-
+    // weapons
     bow: "/assets/bow.png",
-    ground: "/assets/plain-grass.png",
+    hammer: "/assets/hammer.png", brute: "/assets/spider.png",
+    // ground
+    merchant: "/assets/merchant.png",
     "flower-grass": "/assets/flower-grass.png", grass: "/assets/grass.png",
+    // Trees
     tree_bottom: "/assets/tree.png",
-    spider: "/assets/spider.png", merchant: "/assets/merchant.png",
-
+    // monsters
+    spider: "/assets/spider.png",
     ghost: "/assets/ghost.png", "wood-planks": "/assets/wood-planks.jpg",
     stick: "/assets/stick.png", "crafting-table": "/assets/crafting-table.png",
-    hammer: "/assets/hammer.png", brute: "/assets/spider.png",
 
     feather: "/assets/loot/feather.png",
     "spider-eye": "/assets/loot/spider_eye.png",
@@ -28,6 +30,7 @@ export const IMAGE_ASSETS: Record<string, string> = {
     "stone-block": "/assets/stone-block.png",
 
     // GrassBiom assets
+    ground: "/assets/plain-grass.png",
     grass1: "/assets/Bioms/grass1.png",
     grass2: "/assets/Bioms/grass2.png",
     mushroom: "/assets/Bioms/mushroom.png",
@@ -51,4 +54,6 @@ export const IMAGE_ASSETS: Record<string, string> = {
     rock4: "/assets/Rocks/rock4.png",
     rock5: "/assets/Rocks/rock5.png",
     "tileset-atlas": "/assets/tileset.png",
+    // food
+    "chickenLeg": "/assets/food/ChickenLeg.png",
 }

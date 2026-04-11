@@ -13,6 +13,8 @@ export interface BiomeConfig {
     treeTypes: ("green" | "orange")[]
     decorations: TileInfo[]
     decorDensity: number
+    animalPackDensity: number
+    monsterDensity: number
 }
 
 export class BiomeManager {
@@ -21,28 +23,34 @@ export class BiomeManager {
             type: 'DESERT',
             tiles: [{ key: 'sand' }, { key: 'sand2' }],
             treeDensity: 0,
-            decorDensity: 0.05,
+            decorDensity: 0.02,
             decorations: [{ key: 'cactus_big' }, { key: 'cactus_small' }, { key: 'desert_grass' }],
-            rockDensity: 0.01,
-            treeTypes: []
+            rockDensity: 0.005,
+            treeTypes: [],
+            animalPackDensity: 0.001,
+            monsterDensity: 0.001
         },
         GRASSLAND: {
             type: 'GRASSLAND',
             tiles: [{ key: 'grass1' }, { key: 'grass2' }, { key: 'flowergrass' }],
-            treeDensity: 0.05,
-            decorDensity: 0.03,
+            treeDensity: 0.02,
+            decorDensity: 0.015,
             decorations: [{ key: 'mushroom' }, { key: 'smallflowers' }, { key: 'flowergrass' }],
             rockDensity: 0.005,
-            treeTypes: ["green", "orange"]
+            treeTypes: ["green", "orange"],
+            animalPackDensity: 0.005,
+            monsterDensity: 0.001
         },
         FOREST: {
             type: 'FOREST',
             tiles: [{ key: 'grass1' }, { key: 'grass2' }], // No flowergrass in dense forest?
             treeDensity: 0.25,
-            decorDensity: 0.08,
+            decorDensity: 0.03,
             decorations: [{ key: 'mushroom' }, { key: 'smallflowers' }],
             rockDensity: 0.002,
-            treeTypes: ["green"]
+            treeTypes: ["green"],
+            animalPackDensity: 0.005,
+            monsterDensity: 0.003
         }
     }
 
